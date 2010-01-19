@@ -1,5 +1,5 @@
 =====================================================================
- mouseblockerd - Blocks mouse button events during keyboard activity
+ evdaemon - Blocks mouse button events during keyboard activity
 =====================================================================
 
 :date: 2010-01-19
@@ -11,13 +11,14 @@ Description
 
 This program was written to mimic the functionality of
 `syndaemon <http://linuxcommand.org/man_pages/syndaemon1.html>`_ in laptops
-with touchpad not recognized as a real touchpad.
+with touchpad not recognized as a real touchpad. In addition, evdaemon
+allows 
 
 General information
 ===================
 
 - **Author**: `Tuomas Räsänen <http://tuos.codegrove.org/>`_ <tuos@codegrove.org>
-- **Homepage**: http://codegrove.org/mouseblockerd/
+- **Homepage**: http://codegrove.org/evdaemon/
 - **License**: GPLv3+ (see COPYING for details)
 - **Version**: 0.1
 
@@ -42,17 +43,17 @@ Example usage
 
 Output help information::
 
-  mouseblockerd --help
+  evdaemon --help
 
 Output version and copyright information::
 
-  mouseblockerd --version
+  evdaemon --version
 
 Start a daemon process to block mouse button events reported in
 event5 event device for 1.5 seconds after the last key event is reported
 in event3 event device::
 
-  mouseblockerd -i1.5 /dev/input/event3 /dev/input/event5
+  evdaemon -i1.5 /dev/input/event3 /dev/input/event5
 
 Event devices event3 and event5 used in the example above are probably not
 correct in *your* system. See HANDLERS-properties of devices in
@@ -61,10 +62,10 @@ correct in *your* system. See HANDLERS-properties of devices in
 Downloading
 ===========
 
-- Tarball is available at: http://codegrove.org/mouseblockerd/0.1/mouseblockerd-0.1.tar.gz
-- Latest sources from public git-repository: http://github.com/tuos/mouseblockerd/ ::
+- Tarball is available at: http://codegrove.org/evdaemon/0.1/evdaemon-0.1.tar.gz
+- Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
 
-    git clone git://github.com/tuos/mouseblockerd.git
+    git clone git://github.com/tuos/evdaemon.git
 
 Installing
 ==========
@@ -78,4 +79,4 @@ Bug reporting
 =============
 
 Report bugs by sending email to tuos@codegrove.org or by opening an issue
-at http://github.com/tuos/mouseblockerd/issues .
+at http://github.com/tuos/evdaemon/issues .

@@ -13,5 +13,5 @@ m4/
 stamp-h1
 *~
 *Po
-src/mouseblockerd.o
-src/mouseblockerd
+src/evdaemon.o
+src/evdaemon

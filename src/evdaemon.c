@@ -1,5 +1,5 @@
 /*
-  mouseblockerd - Blocks mouse button events during keyboard activity.
+  evdaemon - Blocks mouse button events during keyboard activity.
   Copyright © 2010 Tuomas Räsänen <tuos@codegrove.org>
 
   This program is free software: you can redistribute it and/or modify
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'V':
-			printf("mouseblockerd 0.1\n"
+			printf("evdaemon 0.1\n"
 			       "Copyright © 2010 Tuomas Räsänen.\n"
 			       "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
 			       "This is free software: you are free to change and redistribute it.\n"
@@ -327,19 +327,22 @@ int main(int argc, char **argv)
 				);
 			return EXIT_SUCCESS;
 		case 'h':
-			printf("Usage: %s [OPTIONS] KBD_EVDEV MOUSE_EVDEV\n"
-			       "Blocks mouse button events for SECONDS after keyboard activity.\n"
+			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
+			       "Filters out events of an event device during event activity in another event device.\n"
 			       "\n"
-			       " -i SECONDS, --idle-time=SECONDS  wait SECONDS seconds after keyboard activity\n"
+			       " -i SECONDS, --idle-time=SECONDS  wait SECONDS after last key or button event\n"
 			       "                                  before turning off the filter. Default=%.2lf\n"
 			       " -h --help                        display this help and exit\n"
 			       " -V --version                     output version infromation and exit\n"
 			       "\n"
-			       " KBD_EVDEV, MOUSE_EVDEV\n"
-			       "   Event devices of a keyboard and a mouse, e.g. /dev/input/event3 .\n"
+			       " EVDEV1\n"
+			       "   Event device to be listened for activity, e.g. /dev/input/event3 .\n"
 			       "\n"
-			       "Event device numbers for KBD_EVDEV and MOUSE_EVDEV are listed in\n"
-			       "HANDLERS-properties in /proc/bus/input/devices .\n",
+			       " EVDEV2\n"
+			       "   Event device to be filtered, e.g. /dev/input/event4 .\n"
+			       "\n"
+			       "Event device numbers for EVDEV1 and EVDEV2 are listed in HANDLERS-properties\n"
+			       "in /proc/bus/input/devices .\n",
 			       program_invocation_name, idle);
 			return EXIT_SUCCESS;
 		case '?':
