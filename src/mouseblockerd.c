@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 			       " -V --version                     output version infromation and exit\n"
 			       "\n"
 			       " KBD_EVDEV, MOUSE_EVDEV\n"
-			       "   Event device nodes of a keyboard and a mouse, e.g. /dev/input/event3 .\n"
+			       "   Event devices of a keyboard and a mouse, e.g. /dev/input/event3 .\n"
 			       "\n"
 			       "Event device numbers for KBD_EVDEV and MOUSE_EVDEV are listed in\n"
 			       "HANDLERS-properties in /proc/bus/input/devices .\n",
