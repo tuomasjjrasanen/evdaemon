@@ -1,5 +1,6 @@
 /*
-  evdaemon - Blocks mouse button events during keyboard activity.
+  evdaemon - Filters out events from an event device due to event activity
+  in other event device.
   Copyright © 2010 Tuomas Räsänen <tuos@codegrove.org>
 
   This program is free software: you can redistribute it and/or modify
@@ -31,11 +32,11 @@
 #include <stdint.h>
 #include <libudev.h>
 
+#include "config.h"
+
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
-static int kbd_fd;
-static int mouse_fd;
 static int running = 1;
 
 static int bit_test(int bit_i, const uint8_t *bytes)
@@ -230,7 +231,7 @@ static int handle_mouse(int mouse_fd, int ui_fd, int *filter,
 	if (*filter) {
 		/*
 		  Filter only mouse buttons, motion could be filtered
-		  by addin an identical rule to EV_REL.
+		  by adding an identical rule to EV_REL.
 		*/
 		if (event.type == EV_KEY)
 			return 0;
@@ -259,7 +260,7 @@ static int handle_kbd(int mouse_fd, int kbd_fd, int *filter,
 	}
 
 	/*
-	  Allow modifier keys to be used simultaenously with mouse.
+	  Allow modifier keys to be used simultaneously with mouse.
 	*/
 	if (event.code == KEY_LEFTCTRL || event.code == KEY_RIGHTCTRL
 	    || event.code == KEY_LEFTSHIFT
@@ -287,24 +288,30 @@ void more_help()
 int main(int argc, char **argv)
 {
 	int filter = 0;
+	struct timespec timeout = {1, 0};
 	struct timeval last_kbd;
 	int ui_fd;
 	fd_set rfds;
 	struct sigaction sa;
 	sigset_t set;
 	double idle = 0.75;
+	int kbd_fd;
+	int mouse_fd;
 
 	const struct option options[] = {
 		{"idle-time", required_argument, NULL, 'i'},
+		{"filter-type", required_argument, NULL, 'f'},
+		{"activity-type", required_argument, NULL, 'a'},
+		{"modifiers", no_argument, NULL, 'm'},
 		{"version", no_argument, NULL, 'V'},
 		{"help", no_argument, NULL, 'h'},
-		{}
+		{0, 0, 0, 0}
 	};
 
 	while (1) {
 		int option;
 
-		option = getopt_long(argc, argv, "i:hV", options, NULL);
+		option = getopt_long(argc, argv, "mf:a:i:hV", options, NULL);
 
 		if (option == -1)
 			break;
@@ -318,32 +325,56 @@ int main(int argc, char **argv)
 				more_help();
 			}
 			break;
+		case 'f':
+			break;
+		case 'a':
+			break;
+		case 'm':
+			break;
 		case 'V':
-			printf("evdaemon 0.1\n"
-			       "Copyright © 2010 Tuomas Räsänen.\n"
+			printf("evdaemon %s\n"
+			       "Copyright © 2010 %s\n"
 			       "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
 			       "This is free software: you are free to change and redistribute it.\n"
-			       "There is NO WARRANTY, to the extent permitted by law.\n"
-				);
+			       "There is NO WARRANTY, to the extent permitted by law.\n",
+			       VERSION, PACKAGE_AUTHOR);
 			return EXIT_SUCCESS;
 		case 'h':
 			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
-			       "Filters out events of an event device during event activity in another event device.\n"
+			       "%s\n"
 			       "\n"
-			       " -i SECONDS, --idle-time=SECONDS  wait SECONDS after last key or button event\n"
-			       "                                  before turning off the filter. Default=%.2lf\n"
-			       " -h --help                        display this help and exit\n"
-			       " -V --version                     output version infromation and exit\n"
+			       " -i SECONDS, --idle-time=SECONDS   Wait SECONDS after last activity before\n"
+			       "                                   turning off the filter. Default=%.2lf\n"
+			       " -f TYPE, --filter-type=TYPE       Filter out TYPE events from EVDEV2.\n"
+			       "                                   Default=KEY. This option can be declared\n"
+			       "                                   multiple times to define multiple filtered\n"
+			       "                                   types.\n"
+			       " -a TYPE, --activity-type=TYPE     Monitor for TYPE event activity in EVDEV1.\n"
+			       "                                   Default=KEY. This option can be declared\n"
+			       "                                   multiple times to define multiple monitored\n"
+			       "                                   types.\n"
+			       " -m, --modifiers                   Modifier key events (SHIFT, CTRL, ALT)\n"
+			       "                                   are also counted as an activity. This\n"
+			       "                                   is disabled by default. This flag implies\n"
+			       "                                   -a KEY.\n"
+			       " -h --help                         Display this help and exit.\n"
+			       " -V --version                      Output version infromation and exit.\n"
 			       "\n"
-			       " EVDEV1\n"
-			       "   Event device to be listened for activity, e.g. /dev/input/event3 .\n"
+			       " Variable descriptions\n"
+			       "  EVDEV1 - Event device to be listened for activity, e.g. /dev/input/event3 .\n"
 			       "\n"
-			       " EVDEV2\n"
-			       "   Event device to be filtered, e.g. /dev/input/event4 .\n"
+			       "  EVDEV2 - Event device the filter will be applied to, e.g. /dev/input/event4 .\n"
+			       "\n"
+			       "  TYPE   - Event type, one of the following:\n"
+			       "            KEY - Key or button event.\n"
 			       "\n"
 			       "Event device numbers for EVDEV1 and EVDEV2 are listed in HANDLERS-properties\n"
-			       "in /proc/bus/input/devices .\n",
-			       program_invocation_name, idle);
+			       "in /proc/bus/input/devices .\n"
+			       "\n"
+			       "Report evdaemon bugs to %s\n"
+			       "Evdaemon home page: %s\n",
+			       program_invocation_name, PACKAGE_DESCRIPTION,
+			       idle, PACKAGE_BUGREPORT, PACKAGE_URL);
 			return EXIT_SUCCESS;
 		case '?':
 			more_help();
@@ -393,7 +424,10 @@ int main(int argc, char **argv)
 		FD_SET(kbd_fd, &rfds);
 		FD_SET(mouse_fd, &rfds);
 
-		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, NULL, &set)) {
+		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout,
+				&set)) {
+		case 0:
+			break;
 		case -1:
 			syslog(LOG_ERR, "%s: %s", "select", strerror(errno));
 			goto err;
@@ -412,6 +446,16 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	if (ioctl(ui_fd, UI_DEV_DESTROY) == -1) {
+		syslog(LOG_ERR, "%s: %s", "UI_DEV_DESTROY", strerror(errno));
+		goto err;
+	}
+
+	if (close(ui_fd) == -1) {
+		syslog(LOG_ERR, "%s: %s", "ui close", strerror(errno));
+		goto err;
+	}
+
 	if (close(mouse_fd) == -1) {
 		syslog(LOG_ERR, "%s: %s", "mouse close", strerror(errno));
 		goto err;
@@ -422,6 +466,8 @@ int main(int argc, char **argv)
 	}
 	return EXIT_SUCCESS;
 err:
+	ioctl(ui_fd, UI_DEV_DESTROY);
+	close(ui_fd);
 	close(mouse_fd);
 	close(kbd_fd);
 	return EXIT_FAILURE;
