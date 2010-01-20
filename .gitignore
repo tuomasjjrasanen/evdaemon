@@ -1,3 +1,4 @@
+etc/init/evdaemon.conf
 Makefile
 Makefile.in
 aclocal.m4

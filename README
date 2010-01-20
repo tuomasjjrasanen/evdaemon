@@ -1,6 +1,6 @@
-=====================================================================
- evdaemon - Blocks mouse button events during keyboard activity
-=====================================================================
+=========================================
+ evdaemon - Input event filtering daemon
+=========================================
 
 :date: 2010-01-19
 
@@ -11,8 +11,10 @@ Description
 
 This program was written to mimic the functionality of
 `syndaemon <http://linuxcommand.org/man_pages/syndaemon1.html>`_ in laptops
-with touchpad not recognized as a real touchpad. In addition, evdaemon
-allows 
+with touchpad not recognized as a real touchpad. In addition, unlike syndaemon,
+evdaemon does not filter out pointer motion by default and does not limit
+it's filtering capabilities to just pointer motion. Furthermore, evdaemon does
+not depend on `X Window System <http://www.x.org/wiki/>`_.
 
 General information
 ===================
@@ -49,9 +51,9 @@ Output version and copyright information::
 
   evdaemon --version
 
-Start a daemon process to block mouse button events reported in
-event5 event device for 1.5 seconds after the last key event is reported
-in event3 event device::
+Start a daemon process to filter out key or button events reported in
+event5 event device for 1.5 seconds after the last key or button event is
+reported in event3 event device::
 
   evdaemon -i1.5 /dev/input/event3 /dev/input/event5
 
