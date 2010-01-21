@@ -31,8 +31,12 @@
 #include <linux/uinput.h>
 #include <stdint.h>
 #include <libudev.h>
+#include <limits.h>
 
 #include "config.h"
+
+static const int SELECT_TIMEOUT_SECONDS = 1;
+static const int EXIT_UNDEFINED = INT_MAX;
 
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
@@ -51,43 +55,65 @@ static double timestamp(const struct timeval *tv)
 
 static void sigterm_handler(int signum)
 {
-	syslog(LOG_INFO, "terminating");
+	syslog(LOG_INFO, "starting to terminate");
 	running = 0;
+}
+
+static const char *get_uinput_devnode()
+{
+	static char uinput_devnode[_POSIX_PATH_MAX + 1];
+	const char *devnode;
+	struct udev *udev;
+	struct udev_device *udev_dev;
+
+ 	if ((udev = udev_new()) == NULL)
+		return NULL;
+
+	udev_dev = udev_device_new_from_subsystem_sysname(udev, "misc",
+							  "uinput");
+	
+	if ((devnode = udev_device_get_devnode(udev_dev)) == NULL)
+		return NULL;
+
+	/* I'm on very defensive mood.. it's due the ignorance. :P */
+	if (strlen(devnode) >= sizeof(uinput_devnode)) {
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+
+	strncpy(uinput_devnode, devnode, _POSIX_PATH_MAX);
+
+	if (udev_dev == NULL) {
+		udev_unref(udev);
+		return NULL;
+	}
+
+	udev_device_unref(udev_dev);
+	udev_unref(udev);
+
+	return uinput_devnode;
 }
 
 static int clone_evdev(int evdev_fd)
 {
-	int original_errno = 0;
-	int ui_fd;
 	struct uinput_user_dev user_dev;
-	int i;
-	int evtype;
 	struct input_id id;
-	char devname[UINPUT_MAX_NAME_SIZE];
+	int original_errno = 0;
+	int uinput_fd = -1;
+	int evtype;
+	char devname[sizeof(user_dev.name)];
 	uint8_t evdev_typebits[EV_MAX / 8 + 1];
-	struct udev *udev;
-	struct udev_device *udev_dev;
 
 	if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname)), devname) == -1)
-		return -1;
+		goto err;
 
 	if (ioctl(evdev_fd, EVIOCGID, &id) == -1)
-		return -1;
+		goto err;
 
-	if ((udev = udev_new()) == NULL)
-		return -1;
-	udev_dev = udev_device_new_from_subsystem_sysname(udev, "misc",
-							  "uinput");
-	if (udev_dev == NULL) {
-		udev_unref(udev);
-		return -1;
-	}
-	ui_fd = open(udev_device_get_devnode(udev_dev), O_WRONLY);
-	udev_device_unref(udev_dev);
-	udev_unref(udev);
+	uinput_fd = open(get_uinput_devnode(), O_WRONLY);
 
-	if (ui_fd == -1)
-		return -1;
+	if (uinput_fd == -1)
+		goto err;
 
 	if (ioctl(evdev_fd, EVIOCGBIT(0, EV_MAX), evdev_typebits) < 0)
 		goto err;
@@ -96,7 +122,7 @@ static int clone_evdev(int evdev_fd)
 		if (bit_test(evtype, evdev_typebits)) {
 			int max_bits = 0;
 			int io;
-			if (ioctl(ui_fd, UI_SET_EVBIT, evtype) == -1) {
+			if (ioctl(uinput_fd, UI_SET_EVBIT, evtype) == -1) {
 				goto err;
 			}
 			switch (evtype) {
@@ -136,6 +162,7 @@ static int clone_evdev(int evdev_fd)
 				break;
 			}
 			if (max_bits) {
+				int i;
 				uint8_t evbits[max_bits / 8 + 1];
 				if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bits),
 					  evbits) == -1) {
@@ -143,7 +170,7 @@ static int clone_evdev(int evdev_fd)
 				}
 				for (i = 0; i < max_bits; ++i) {
 					if (bit_test(i, evbits)) {
-						if (ioctl(ui_fd, io, i) == -1) {
+						if (ioctl(uinput_fd, io, i) == -1) {
 							goto err;
 						}
 					}
@@ -153,23 +180,22 @@ static int clone_evdev(int evdev_fd)
 	}
 
 	memset(&user_dev, 0, sizeof(user_dev));
-
-	strncpy(user_dev.name, devname, sizeof(devname));
+	strcpy(user_dev.name, devname);
 	user_dev.id.bustype = id.bustype;
 	user_dev.id.vendor = id.vendor;
 	user_dev.id.product = id.product;
 	user_dev.id.version = id.version;
 
-	if (write(ui_fd, &user_dev, sizeof(user_dev)) != sizeof(user_dev))
+	if (write(uinput_fd, &user_dev, sizeof(user_dev)) != sizeof(user_dev))
 		goto err;
 
-	if (ioctl(ui_fd, UI_DEV_CREATE) == -1)
+	if (ioctl(uinput_fd, UI_DEV_CREATE) == -1)
 		goto err;
 
-	return ui_fd;
+	return uinput_fd;
 err:
 	original_errno = errno;
-	close(ui_fd);
+	close(uinput_fd);
 	errno = original_errno;
 	return -1;
 }
@@ -180,8 +206,6 @@ static int daemonize(void)
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
-	openlog(program_invocation_short_name, LOG_ODELAY, LOG_USER);
-
 	switch (fork()) {
 	case 0:
 		setsid();
@@ -190,27 +214,26 @@ static int daemonize(void)
 		case 0:
 			break;
 		case -1:
-			syslog(LOG_ERR, "%s: %s", "second fork",
-			       strerror(errno));
 			return -1;
 		default:
 			_exit(0);
 		}
 		break;
 	case -1:
-		syslog(LOG_ERR, "%s: %s", "first fork", strerror(errno));
 		return -1;
 	default:
 		_exit(0);
 	}
 	
-	chdir("/");
+	if (chdir("/") == -1)
+		return -1;
+
 	umask(0);
 
 	return 0;
 }
 
-static int handle_mouse(int mouse_fd, int ui_fd, int *filter,
+static int handle_mouse(int mouse_fd, int uinput_fd, int *filter,
 			struct timeval *last_kbd, double idle)
 {
 	struct timeval now;
@@ -236,7 +259,7 @@ static int handle_mouse(int mouse_fd, int ui_fd, int *filter,
 		if (event.type == EV_KEY)
 			return 0;
 	}
-	if (write(ui_fd, &event, sizeof(event)) != sizeof(event))
+	if (write(uinput_fd, &event, sizeof(event)) != sizeof(event))
 		return -1;
 	return 0;
 }
@@ -278,26 +301,18 @@ static int handle_kbd(int mouse_fd, int kbd_fd, int *filter,
 	return 0;
 }
 
-void more_help()
+void help_and_exit()
 {
 	fprintf(stderr, "Try `%s --help' for more information.\n",
 		program_invocation_name);
 	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv)
-{
-	int filter = 0;
-	struct timespec timeout = {1, 0};
-	struct timeval last_kbd;
-	int ui_fd;
-	fd_set rfds;
-	struct sigaction sa;
-	sigset_t set;
-	double idle = 0.75;
-	int kbd_fd;
-	int mouse_fd;
+/* Args: */
+static double idle = 0.75;
 
+void parse_args(int argc, char **argv)
+{
 	const struct option options[] = {
 		{"idle-time", required_argument, NULL, 'i'},
 		{"filter-type", required_argument, NULL, 'f'},
@@ -322,7 +337,7 @@ int main(int argc, char **argv)
 			if (idle <= 0) {
 				fprintf(stderr, "%s: incorrect idle time\n",
 					program_invocation_name);
-				more_help();
+				help_and_exit();
 			}
 			break;
 		case 'f':
@@ -338,7 +353,7 @@ int main(int argc, char **argv)
 			       "This is free software: you are free to change and redistribute it.\n"
 			       "There is NO WARRANTY, to the extent permitted by law.\n",
 			       VERSION, PACKAGE_AUTHOR);
-			return EXIT_SUCCESS;
+			exit(EXIT_SUCCESS);
 		case 'h':
 			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
 			       "%s\n"
@@ -375,9 +390,9 @@ int main(int argc, char **argv)
 			       "Evdaemon home page: %s\n",
 			       program_invocation_name, PACKAGE_DESCRIPTION,
 			       idle, PACKAGE_BUGREPORT, PACKAGE_URL);
-			return EXIT_SUCCESS;
+			exit(EXIT_SUCCESS);
 		case '?':
-			more_help();
+			help_and_exit();
 		default:
 			errx(EXIT_FAILURE, "Argument parsing failed.");
 		}		
@@ -386,54 +401,88 @@ int main(int argc, char **argv)
 	if (optind + 2 != argc) {
 		fprintf(stderr, "%s: wrong number of arguments\n",
 			program_invocation_name);
-		more_help();
+		help_and_exit();
+	}
+}
+
+int main(int argc, char **argv)
+{
+	int filter = 0;
+	struct timespec timeout = {SELECT_TIMEOUT_SECONDS, 0};
+	struct timeval last_kbd;
+	fd_set rfds;
+	struct sigaction sigact;
+	sigset_t select_sigset;
+	int uinput_fd = -1;
+	int kbd_fd = -1;
+	int mouse_fd = -1;
+	int exitval = EXIT_UNDEFINED;
+
+	parse_args(argc, argv);
+
+	openlog(program_invocation_short_name, LOG_ODELAY, LOG_USER);
+
+	if (daemonize() == -1) {
+		syslog(LOG_ERR, "daemonize: %s", strerror(errno));
+		goto err;
+	}
+
+	sigact.sa_handler = &sigterm_handler;
+
+	if (sigfillset(&sigact.sa_mask) == -1) {
+		syslog(LOG_ERR, "sigfillset: %s", strerror(errno));
+		goto err;
+	}
+
+	if (sigaction(SIGTERM, &sigact, NULL) == -1) {
+		syslog(LOG_ERR, "sigaction: %s", strerror(errno));
+		goto err;
+	}
+
+	if (sigemptyset(&select_sigset) == -1) {
+		syslog(LOG_ERR, "sigemptyset: %s", strerror(errno));
+		goto err;
+	}
+
+	if (sigaddset(&select_sigset, SIGTERM) == -1) {
+		syslog(LOG_ERR, "sigaddset: %s", strerror(errno));
+		goto err;
 	}
 
 	if ((kbd_fd = open(argv[optind], O_RDONLY)) == -1) {
-		error(0, errno, "opening %s", argv[optind]);
+		syslog(LOG_ERR, "open %s: %s", argv[optind], strerror(errno));
 		goto err;
 	}
 
 	if ((mouse_fd = open(argv[optind + 1], O_RDONLY)) == -1) {
-		error(0, errno, "opening %s", argv[optind + 1]);
+		syslog(LOG_ERR, "open %s: %s", argv[optind+1], strerror(errno));
 		goto err;
 	}
 
 	if (ioctl(mouse_fd, EVIOCGRAB, 1) == -1) {
-		perror("mouse grab");
+		syslog(LOG_ERR, "grab mouse: %s", strerror(errno));
 		goto err;
 	}
 
-	ui_fd = clone_evdev(mouse_fd);
-
-	if (daemonize() == -1)
-		goto err;
-
-	sigfillset(&sa.sa_mask);
-	sa.sa_handler = &sigterm_handler;
-	if (sigaction(SIGTERM, &sa, NULL) == -1) {
-		perror("sigaction SIGTERM");
+	if ((uinput_fd = clone_evdev(mouse_fd)) == -1) {
+		syslog(LOG_ERR, "clone_evdev: %s", strerror(errno));
 		goto err;
 	}
-
-	sigemptyset(&set);
-	sigaddset(&set, SIGTERM);
-
+	
 	while (running) {
 		FD_ZERO(&rfds);
 		FD_SET(kbd_fd, &rfds);
 		FD_SET(mouse_fd, &rfds);
 
-		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout,
-				&set)) {
+		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout, &select_sigset)) {
 		case 0:
 			break;
 		case -1:
-			syslog(LOG_ERR, "%s: %s", "select", strerror(errno));
+			syslog(LOG_ERR, "select: %s", strerror(errno));
 			goto err;
 		default:
 			if (FD_ISSET(mouse_fd, &rfds)) {
-				if (handle_mouse(mouse_fd, ui_fd, &filter,
+				if (handle_mouse(mouse_fd, uinput_fd, &filter,
 						 &last_kbd, idle) == -1) {
 					goto err;
 				}
@@ -446,29 +495,36 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	if (ioctl(ui_fd, UI_DEV_DESTROY) == -1) {
-		syslog(LOG_ERR, "%s: %s", "UI_DEV_DESTROY", strerror(errno));
-		goto err;
+
+	exitval = EXIT_SUCCESS;
+err:
+	exitval = exitval == EXIT_UNDEFINED ? EXIT_FAILURE : exitval;
+
+	if (ioctl(uinput_fd, UI_DEV_DESTROY) == -1) {
+		syslog(LOG_ERR, "destroy uinput: %s", strerror(errno));
+		exitval = EXIT_FAILURE;
 	}
 
-	if (close(ui_fd) == -1) {
-		syslog(LOG_ERR, "%s: %s", "ui close", strerror(errno));
-		goto err;
+	if (close(uinput_fd) == -1) {
+		syslog(LOG_ERR, "close uinput: %s", strerror(errno));
+		exitval = EXIT_FAILURE;
+	}
+
+	if (ioctl(mouse_fd, EVIOCGRAB, 0) == -1) {
+		syslog(LOG_ERR, "release mouse: %s", strerror(errno));
+		exitval = EXIT_FAILURE;
 	}
 
 	if (close(mouse_fd) == -1) {
-		syslog(LOG_ERR, "%s: %s", "mouse close", strerror(errno));
-		goto err;
+		syslog(LOG_ERR, "close mouse: %s", strerror(errno));
+		exitval = EXIT_FAILURE;
 	}
+
 	if (close(kbd_fd) == -1) {
-		syslog(LOG_ERR, "%s: %s", "kbd close", strerror(errno));
-		goto err;
+		syslog(LOG_ERR, "close kbd: %s", strerror(errno));
+		exitval = EXIT_FAILURE;
 	}
-	return EXIT_SUCCESS;
-err:
-	ioctl(ui_fd, UI_DEV_DESTROY);
-	close(ui_fd);
-	close(mouse_fd);
-	close(kbd_fd);
-	return EXIT_FAILURE;
+
+	syslog(LOG_INFO, "terminated");
+	return exitval;
 }
