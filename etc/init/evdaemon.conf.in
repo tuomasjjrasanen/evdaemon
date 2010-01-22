@@ -11,4 +11,4 @@ respawn
 umask 0
 kill timeout 5
 
-exec evdaemon `find /dev/input/by-path/ -regex .*-event-kbd* | tail -n1 | xargs readlink -e` `find /dev/input/by-path/ -regex .*-event-mouse* | tail -n1 | xargs readlink -e`
+exec evdaemon @EVDEV1@ @EVDEV2@

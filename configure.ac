@@ -17,6 +17,10 @@ then
   AC_MSG_ERROR([This package needs libudev.h.
   Perhaps run `apt-get install libudev-dev' with root privileges?])
 fi
+EVDEV1=`find /dev/input/by-path/ -regex .*-event-kbd* | tail -n1 | xargs readlink -e || echo /dev/input/eventX`
+EVDEV2=`find /dev/input/by-path/ -regex .*-event-muse* | tail -n1 | xargs readlink -e || echo /dev/input/eventX`
+AC_SUBST([EVDEV1])
+AC_SUBST([EVDEV2])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
         Makefile
