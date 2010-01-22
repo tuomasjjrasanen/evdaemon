@@ -493,7 +493,8 @@ int main(int argc, char **argv)
 		FD_SET(kbd_fd, &rfds);
 		FD_SET(mouse_fd, &rfds);
 
-		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout, NULL)) {
+		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout,
+                                &select_sigset)) {
 		case 0:
 			break;
 		case -1:
