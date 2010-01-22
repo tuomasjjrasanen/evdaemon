@@ -35,6 +35,14 @@
 
 #include "config.h"
 
+#define IS_MODIFIER_KEY(keycode) ((keycode) == KEY_LEFTCTRL   || \
+                                  (keycode) == KEY_RIGHTCTRL  || \
+                                  (keycode) == KEY_LEFTSHIFT  || \
+                                  (keycode) == KEY_RIGHTSHIFT || \
+                                  (keycode) == KEY_LEFTALT    || \
+                                  (keycode) == KEY_RIGHTALT)
+
+
 static const int SELECT_TIMEOUT_SECONDS = 1;
 static const int EXIT_UNDEFINED = INT_MAX;
 
@@ -42,6 +50,113 @@ extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
 static int running = 1;
+
+/* Args and default values: */
+static double idle_time = 0.75;
+static int    monitor_modifiers = 0;
+
+void help_and_exit()
+{
+	fprintf(stderr, "Try `%s --help' for more information.\n",
+		program_invocation_name);
+	exit(EXIT_FAILURE);
+}
+
+void parse_args(int argc, char **argv)
+{
+	const struct option options[] = {
+		{"idle-time", required_argument, NULL, 'i'},
+		{"filter-type", required_argument, NULL, 'f'},
+		{"activity-type", required_argument, NULL, 'a'},
+		{"monitor-modifiers", no_argument, NULL, 'm'},
+		{"version", no_argument, NULL, 'V'},
+		{"help", no_argument, NULL, 'h'},
+		{0, 0, 0, 0}
+	};
+
+	while (1) {
+		int option;
+
+		option = getopt_long(argc, argv, "i:f:a:mVh", options, NULL);
+
+		if (option == -1)
+			break;
+
+		switch (option) {
+		case 'i':
+			idle_time = strtod(optarg, NULL);
+			if (idle_time <= 0) {
+				fprintf(stderr, "%s: incorrect idle time\n",
+					program_invocation_name);
+				help_and_exit();
+			}
+			break;
+		case 'f':
+			break;
+		case 'a':
+			break;
+		case 'm':
+                        monitor_modifiers = 1;
+                        break;
+		case 'V':
+			printf("%s %s\n"
+			       "Copyright © 2010 %s\n"
+			       "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
+			       "This is free software: you are free to change and redistribute it.\n"
+			       "There is NO WARRANTY, to the extent permitted by law.\n",
+			       PACKAGE_NAME, VERSION, PACKAGE_AUTHOR);
+			exit(EXIT_SUCCESS);
+		case 'h':
+			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
+			       "%s\n"
+			       "\n"
+			       " -i SECONDS, --idle-time=SECONDS   Wait SECONDS after last activity before\n"
+			       "                                   turning off the filter. Default=%.2lf\n"
+			       " -f TYPE, --filter-type=TYPE       Filter out TYPE events from EVDEV2.\n"
+			       "                                   Default=KEY. This option can be declared\n"
+			       "                                   multiple times to define multiple filtered\n"
+			       "                                   types.\n"
+			       " -a TYPE, --activity-type=TYPE     Monitor for TYPE event activity in EVDEV1.\n"
+			       "                                   Default=KEY. This option can be declared\n"
+			       "                                   multiple times to define multiple monitored\n"
+			       "                                   types.\n"
+			       " -m, --monitor-modifiers           Modifier key events (SHIFT, CTRL, ALT)\n"
+			       "                                   are also counted as an activity. This\n"
+			       "                                   is disabled by default. This flag implies\n"
+			       "                                   -a KEY.\n"
+			       " -h --help                         Display this help and exit.\n"
+			       " -V --version                      Output version infromation and exit.\n"
+			       "\n"
+			       " Variable descriptions\n"
+			       "  EVDEV1 - Event device to be monitored for activity, e.g. /dev/input/event3 .\n"
+			       "\n"
+			       "  EVDEV2 - Event device the filter will be applied to, e.g. /dev/input/event4 .\n"
+			       "\n"
+			       "  TYPE   - Event type, one of the following:\n"
+			       "            KEY - Key or button event.\n"
+			       "\n"
+			       "Event device numbers for EVDEV1 and EVDEV2 are listed in HANDLERS-properties\n"
+			       "in /proc/bus/input/devices .\n"
+			       "\n"
+			       "Report %s bugs to %s\n"
+			       "Home page: %s\n",
+			       program_invocation_name, PACKAGE_DESCRIPTION,
+			       idle_time, PACKAGE_NAME, PACKAGE_BUGREPORT,
+                               PACKAGE_URL);
+			exit(EXIT_SUCCESS);
+		case '?':
+			help_and_exit();
+		default:
+			errx(EXIT_FAILURE, "Argument parsing failed.");
+		}		
+	}
+
+	if (optind + 2 != argc) {
+		fprintf(stderr, "%s: wrong number of arguments\n",
+			program_invocation_name);
+		help_and_exit();
+	}
+}
 
 static int bit_test(int bit_i, const uint8_t *bytes)
 {
@@ -250,7 +365,7 @@ static int daemonize(void)
 }
 
 static int handle_mouse(int mouse_fd, int uinput_fd, int *filter,
-			struct timeval *last_kbd, double idle)
+			struct timeval *last_kbd)
 {
 	struct timeval     now;
 	struct input_event event;
@@ -264,7 +379,7 @@ static int handle_mouse(int mouse_fd, int uinput_fd, int *filter,
 		return -1;
 	}
 
-	if (timestamp(&now) - timestamp(last_kbd) >= idle)
+	if (timestamp(&now) - timestamp(last_kbd) >= idle_time)
 		*filter = 0;
 
 	if (*filter) {
@@ -299,15 +414,11 @@ static int handle_kbd(int mouse_fd, int kbd_fd, int *filter,
 	}
 
 	/*
-	  Allow modifier keys to be used simultaneously with mouse.
+	  If we are not monitoring modifier keys, we don't care if they
+          are pressed or not.
 	*/
-	if (event.code == KEY_LEFTCTRL || event.code == KEY_RIGHTCTRL
-	    || event.code == KEY_LEFTSHIFT
-	    || event.code == KEY_RIGHTSHIFT
-	    || event.code == KEY_LEFTALT
-	    || event.code == KEY_RIGHTALT) {
-		return 0;
-	}
+	if (!monitor_modifiers && IS_MODIFIER_KEY(event.code))
+                return 0;
 
 	if (gettimeofday(last_kbd, NULL) == -1) {
 		syslog(LOG_ERR, "%s: %s", "gettimeofday", strerror(errno));
@@ -315,110 +426,6 @@ static int handle_kbd(int mouse_fd, int kbd_fd, int *filter,
 	}
 	*filter = 1;
 	return 0;
-}
-
-void help_and_exit()
-{
-	fprintf(stderr, "Try `%s --help' for more information.\n",
-		program_invocation_name);
-	exit(EXIT_FAILURE);
-}
-
-/* Args: */
-static double idle = 0.75;
-
-void parse_args(int argc, char **argv)
-{
-	const struct option options[] = {
-		{"idle-time", required_argument, NULL, 'i'},
-		{"filter-type", required_argument, NULL, 'f'},
-		{"activity-type", required_argument, NULL, 'a'},
-		{"modifiers", no_argument, NULL, 'm'},
-		{"version", no_argument, NULL, 'V'},
-		{"help", no_argument, NULL, 'h'},
-		{0, 0, 0, 0}
-	};
-
-	while (1) {
-		int option;
-
-		option = getopt_long(argc, argv, "mf:a:i:hV", options, NULL);
-
-		if (option == -1)
-			break;
-
-		switch (option) {
-		case 'i':
-			idle = strtod(optarg, NULL);
-			if (idle <= 0) {
-				fprintf(stderr, "%s: incorrect idle time\n",
-					program_invocation_name);
-				help_and_exit();
-			}
-			break;
-		case 'f':
-			break;
-		case 'a':
-			break;
-		case 'm':
-			break;
-		case 'V':
-			printf("evdaemon %s\n"
-			       "Copyright © 2010 %s\n"
-			       "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
-			       "This is free software: you are free to change and redistribute it.\n"
-			       "There is NO WARRANTY, to the extent permitted by law.\n",
-			       VERSION, PACKAGE_AUTHOR);
-			exit(EXIT_SUCCESS);
-		case 'h':
-			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
-			       "%s\n"
-			       "\n"
-			       " -i SECONDS, --idle-time=SECONDS   Wait SECONDS after last activity before\n"
-			       "                                   turning off the filter. Default=%.2lf\n"
-			       " -f TYPE, --filter-type=TYPE       Filter out TYPE events from EVDEV2.\n"
-			       "                                   Default=KEY. This option can be declared\n"
-			       "                                   multiple times to define multiple filtered\n"
-			       "                                   types.\n"
-			       " -a TYPE, --activity-type=TYPE     Monitor for TYPE event activity in EVDEV1.\n"
-			       "                                   Default=KEY. This option can be declared\n"
-			       "                                   multiple times to define multiple monitored\n"
-			       "                                   types.\n"
-			       " -m, --modifiers                   Modifier key events (SHIFT, CTRL, ALT)\n"
-			       "                                   are also counted as an activity. This\n"
-			       "                                   is disabled by default. This flag implies\n"
-			       "                                   -a KEY.\n"
-			       " -h --help                         Display this help and exit.\n"
-			       " -V --version                      Output version infromation and exit.\n"
-			       "\n"
-			       " Variable descriptions\n"
-			       "  EVDEV1 - Event device to be listened for activity, e.g. /dev/input/event3 .\n"
-			       "\n"
-			       "  EVDEV2 - Event device the filter will be applied to, e.g. /dev/input/event4 .\n"
-			       "\n"
-			       "  TYPE   - Event type, one of the following:\n"
-			       "            KEY - Key or button event.\n"
-			       "\n"
-			       "Event device numbers for EVDEV1 and EVDEV2 are listed in HANDLERS-properties\n"
-			       "in /proc/bus/input/devices .\n"
-			       "\n"
-			       "Report evdaemon bugs to %s\n"
-			       "Evdaemon home page: %s\n",
-			       program_invocation_name, PACKAGE_DESCRIPTION,
-			       idle, PACKAGE_BUGREPORT, PACKAGE_URL);
-			exit(EXIT_SUCCESS);
-		case '?':
-			help_and_exit();
-		default:
-			errx(EXIT_FAILURE, "Argument parsing failed.");
-		}		
-	}
-
-	if (optind + 2 != argc) {
-		fprintf(stderr, "%s: wrong number of arguments\n",
-			program_invocation_name);
-		help_and_exit();
-	}
 }
 
 int main(int argc, char **argv)
@@ -503,7 +510,7 @@ int main(int argc, char **argv)
 		default:
 			if (FD_ISSET(mouse_fd, &rfds)) {
 				if (handle_mouse(mouse_fd, uinput_fd, &filter,
-						 &last_kbd, idle) == -1) {
+						 &last_kbd) == -1) {
 					goto err;
 				}
 			} else if (FD_ISSET(kbd_fd, &rfds)) {
