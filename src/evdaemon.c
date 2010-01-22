@@ -61,9 +61,9 @@ static void sigterm_handler(int signum)
 
 static const char *get_uinput_devnode()
 {
-	static char uinput_devnode[_POSIX_PATH_MAX + 1];
-	const char *devnode;
-	struct udev *udev;
+	static char        uinput_devnode[_POSIX_PATH_MAX + 1];
+	const char         *devnode;
+	struct udev        *udev;
 	struct udev_device *udev_dev;
 
  	if ((udev = udev_new()) == NULL)
@@ -97,12 +97,12 @@ static const char *get_uinput_devnode()
 static int clone_evdev(int evdev_fd)
 {
 	struct uinput_user_dev user_dev;
-	struct input_id id;
-	int original_errno = 0;
-	int uinput_fd = -1;
-	int evtype;
-	char devname[sizeof(user_dev.name)];
-	uint8_t evdev_typebits[EV_MAX / 8 + 1];
+	struct input_id        id;
+	int                    original_errno = 0;
+	int                    uinput_fd = -1;
+	int                    evtype;
+	char                   devname[sizeof(user_dev.name)];
+	uint8_t                evdev_typebits[EV_MAX / 8 + 1];
 
 	if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname)), devname) == -1)
 		goto err;
@@ -202,9 +202,11 @@ err:
 
 static int daemonize(void)
 {
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
+        int i;
+        int fd;
+        int daemon_errno = 0;
+
+        signal(SIGINT, SIG_IGN);
 
 	switch (fork()) {
 	case 0:
@@ -216,27 +218,41 @@ static int daemonize(void)
 		case -1:
 			return -1;
 		default:
-			_exit(0);
+			exit(0);
 		}
 		break;
 	case -1:
 		return -1;
 	default:
-		_exit(0);
+		exit(0);
 	}
 	
-	if (chdir("/") == -1)
-		return -1;
-
 	umask(0);
 
-	return 0;
+	if (chdir("/") == -1)
+                daemon_errno = errno;
+
+        for (i = 0; i < 3; ++i)
+                if (close(i) == -1 && !daemon_errno)
+                        daemon_errno = errno;
+        
+        fd = open("/dev/null", O_RDWR);
+        if (fd == -1 && !daemon_errno) {
+                daemon_errno = errno;
+        } else {
+                if (dup(fd) == -1 && !daemon_errno)
+                        daemon_errno = errno;
+                if (dup(fd) == -1 && !daemon_errno)
+                        daemon_errno = errno;
+        }
+     
+        return daemon_errno ? -1 : 0;
 }
 
 static int handle_mouse(int mouse_fd, int uinput_fd, int *filter,
 			struct timeval *last_kbd, double idle)
 {
-	struct timeval now;
+	struct timeval     now;
 	struct input_event event;
 
 	if (read(mouse_fd, &event, sizeof(event)) == -1) {
@@ -407,16 +423,15 @@ void parse_args(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	int filter = 0;
-	struct timespec timeout = {SELECT_TIMEOUT_SECONDS, 0};
-	struct timeval last_kbd;
-	fd_set rfds;
+	int              filter = 0;
+	struct timespec  timeout = {SELECT_TIMEOUT_SECONDS, 0};
+	struct timeval   last_kbd;
 	struct sigaction sigact;
-	sigset_t select_sigset;
-	int uinput_fd = -1;
-	int kbd_fd = -1;
-	int mouse_fd = -1;
-	int exitval = EXIT_UNDEFINED;
+	sigset_t         select_sigset;
+	int              uinput_fd = -1;
+	int              kbd_fd = -1;
+	int              mouse_fd = -1;
+	int              exitval = EXIT_UNDEFINED;
 
 	parse_args(argc, argv);
 
@@ -426,6 +441,8 @@ int main(int argc, char **argv)
 		syslog(LOG_ERR, "daemonize: %s", strerror(errno));
 		goto err;
 	}
+
+	syslog(LOG_INFO, "started");
 
 	sigact.sa_handler = &sigterm_handler;
 
@@ -470,11 +487,13 @@ int main(int argc, char **argv)
 	}
 	
 	while (running) {
+                fd_set rfds;
+
 		FD_ZERO(&rfds);
 		FD_SET(kbd_fd, &rfds);
 		FD_SET(mouse_fd, &rfds);
 
-		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout, &select_sigset)) {
+		switch (pselect(mouse_fd + 1, &rfds, NULL, NULL, &timeout, NULL)) {
 		case 0:
 			break;
 		case -1:
@@ -495,6 +514,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	syslog(LOG_INFO, "stopped");
 
 	exitval = EXIT_SUCCESS;
 err:
