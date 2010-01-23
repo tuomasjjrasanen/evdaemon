@@ -1,5 +1,5 @@
 =========================================
- evdaemon - Input event filtering daemon.
+ @PACKAGE_NAME@ - @PACKAGE_DESCRIPTION@
 =========================================
 
 :date: 2010-01-23
@@ -12,17 +12,17 @@ Description
 This program was written to mimic the functionality of
 `syndaemon <http://linuxcommand.org/man_pages/syndaemon1.html>`_ in laptops
 with touchpad not recognized as a real touchpad. In addition, unlike syndaemon,
-evdaemon does not filter out pointer motion by default and does not limit
-it's filtering capabilities to just pointer motion. Furthermore, evdaemon does
+@PACKAGE_NAME@ does not filter out pointer motion by default and does not limit
+it's filtering capabilities to just pointer motion. Furthermore, @PACKAGE_NAME@ does
 not depend on `X Window System <http://www.x.org/wiki/>`_.
 
 General information
 ===================
 
 - **Author**: `Tuomas Räsänen <http://tuos.codegrove.org/>`_ <tuos@codegrove.org>
-- **Homepage**: http://codegrove.org/evdaemon/
+- **Homepage**: @PACKAGE_URL@
 - **License**: GPLv3+ (see COPYING for details)
-- **Version**: 0.1
+- **Version**: @VERSION@
 
 Requirements
 ============
@@ -45,17 +45,17 @@ Example usage
 
 Output help information::
 
-  evdaemon --help
+  @PACKAGE_NAME@ --help
 
 Output version and copyright information::
 
-  evdaemon --version
+  @PACKAGE_NAME@ --version
 
 Start a daemon process to filter out key or button events reported in
 eventY event device for 1.5 seconds after the last key or button event is
 reported in eventX event device::
 
-  evdaemon -i1.5 /dev/input/eventX /dev/input/eventY
+  @PACKAGE_NAME@ -i1.5 /dev/input/eventX /dev/input/eventY
 
 X and Y are event device numbers of wanted devices. See HANDLERS-properties
 of devices in /proc/bus/input/devices for correct values::
@@ -88,10 +88,10 @@ for the Acrox USB -mouse and ``/dev/input/event3`` for the keyboard.
 Downloading
 ===========
 
-- Tarball is available at: http://codegrove.org/evdaemon/0.1/evdaemon-0.1.tar.gz
-- Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
+- Tarball is available at: @PACKAGE_URL@@VERSION@/@PACKAGE_NAME@-@VERSION@.tar.gz
+- Latest sources from public git-repository: http://github.com/tuos/@PACKAGE_NAME@/ ::
 
-    git clone git://github.com/tuos/evdaemon.git
+    git clone git://github.com/tuos/@PACKAGE_NAME@.git
 
 Installing
 ==========
@@ -104,5 +104,5 @@ The install-procedure adheres the "standard"::
 Bug reporting
 =============
 
-Report bugs by sending email to tuos@codegrove.org or by opening an issue
-at http://github.com/tuos/evdaemon/issues .
+Report bugs by sending email to @PACKAGE_BUGREPORT@ or by opening an issue
+at http://github.com/tuos/@PACKAGE_NAME@/issues .

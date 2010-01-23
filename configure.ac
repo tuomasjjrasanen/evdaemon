@@ -6,7 +6,15 @@ AC_PROG_CC
 if test -z "`lsmod | grep uinput`"
 then
   AC_MSG_ERROR([This package needs uinput module.
-  To install, run `modprobe -i uinput' with root privileges.])
+  To install, run `modprobe -i uinput' with root privileges.
+  It is probably wise to add uinput to the list of modules
+  loaded at boot time if it is not there yet:
+  `grep uinput /etc/modules || echo uinput >> /etc/modules'])
+fi
+if test -z "`grep uinput /etc/modules`"
+then
+  AC_MSG_WARN([It is probably wise to add uinput to the list of modules
+  loaded at boot time: `echo uinput >> /etc/modules'])
 fi
 AC_DEFINE([PACKAGE_DESCRIPTION], ["Input event filtering daemon."], [Description])
 AC_DEFINE([PACKAGE_AUTHOR], ["Tuomas Räsänen <tuos@codegrove.org>"], [Author])
