@@ -1,4 +1,4 @@
-AC_INIT([evdaemon], [0.1], [tuos@codegrove.org], [evdaemon], [http://codegrove.org/evdaemon/])
+AC_INIT([evdaemon], [0.1.1], [tuos@codegrove.org], [evdaemon], [http://codegrove.org/evdaemon/])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
@@ -35,6 +35,7 @@ AC_CONFIG_FILES([
         README
         Makefile
 	src/Makefile
-	etc/init/evdaemon.conf
+        etc/init/Makefile
+	etc/init/evdaemon.conf                
 ])
 AC_OUTPUT

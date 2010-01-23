@@ -40,22 +40,53 @@ Recommendations
 
     echo uinput >> /etc/modules
 
-Example usage
-=============
+Downloading
+===========
 
-Output help information::
+- Tarball is available at: @PACKAGE_URL@@VERSION@/@PACKAGE_NAME@-@VERSION@.tar.gz
+- Latest sources from public git-repository: http://github.com/tuos/@PACKAGE_NAME@/ ::
 
-  @PACKAGE_NAME@ --help
+    git clone git://github.com/tuos/@PACKAGE_NAME@.git
 
-Output version and copyright information::
+Installing
+==========
 
-  @PACKAGE_NAME@ --version
+The install-procedure adheres the "standard"::
+
+  ./configure --prefix=/usr/local --sysconfdir=/etc
+  make && sudo make install
+
+This installs all files with "safe" ``/usr/local`` prefix, but yet installs
+the default configuration file in the right place. Afterwards, you
+should make sure that proper arguments are given in /etc/evdaemon.conf.
+
+Starting with Upstart
+=====================
+
+By default, evdaemon is configured to be started on runlevels 2-5 and stopped
+when leaving them. See ``etc/init/evdaemon.conf`` for details.
+
+To start and stop evdaemon explicitely with Upstart, simply type::
+
+  start evdaemon
+
+or::
+
+  stop evdaemon
+
+See ``init(5)`` for details.
+
+To get started
+==============
 
 Start a daemon process to filter out key or button events reported in
 eventY event device for 1.5 seconds after the last key or button event is
 reported in eventX event device::
 
   @PACKAGE_NAME@ -i1.5 /dev/input/eventX /dev/input/eventY
+
+.. note:: Note that in normal setup, this command is not given explicitely in command
+          line, but defined in ``/etc/init/evdaemon.conf`` to be started by Upstart.
 
 X and Y are event device numbers of wanted devices. See HANDLERS-properties
 of devices in /proc/bus/input/devices for correct values::
@@ -85,21 +116,13 @@ of devices in /proc/bus/input/devices for correct values::
 In the example above, ``/dev/input/event6`` would be the correct event device
 for the Acrox USB -mouse and ``/dev/input/event3`` for the keyboard.
 
-Downloading
-===========
+Output help information::
 
-- Tarball is available at: @PACKAGE_URL@@VERSION@/@PACKAGE_NAME@-@VERSION@.tar.gz
-- Latest sources from public git-repository: http://github.com/tuos/@PACKAGE_NAME@/ ::
+  @PACKAGE_NAME@ --help
 
-    git clone git://github.com/tuos/@PACKAGE_NAME@.git
+Output version and copyright information::
 
-Installing
-==========
-
-The install-procedure adheres the "standard"::
-
-  ./configure --prefix=/usr/local
-  make && sudo make install
+  @PACKAGE_NAME@ --version
 
 Bug reporting
 =============
