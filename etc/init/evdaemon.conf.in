@@ -11,4 +11,4 @@ respawn
 umask 0
 kill timeout 5
 
-exec evdaemon @EVDEV1@ @EVDEV2@
+exec evdaemon /dev/input/eventX /dev/input/eventY

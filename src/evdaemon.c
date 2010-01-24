@@ -1,7 +1,6 @@
 /*
-  evdaemon - Filters out events from an event device due to event activity
-  in other event device.
-  Copyright © 2010 Tuomas Räsänen <tuos@codegrove.org>
+  evdaemon - Monitor Linux event devices and modify their behavior.
+  Copyright © 2010 Tuomas Räsänen (tuos) <tuos@codegrove.org>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -107,41 +106,27 @@ void parse_args(int argc, char **argv)
 			       PACKAGE_NAME, VERSION, PACKAGE_AUTHOR);
 			exit(EXIT_SUCCESS);
 		case 'h':
-			printf("Usage: %s [OPTIONS] EVDEV1 EVDEV2\n"
+			printf("Usage: %s [OPTIONS] /dev/input/eventX /dev/input/eventY\n"
 			       "%s\n"
 			       "\n"
-			       " -i SECONDS, --idle-time=SECONDS   Wait SECONDS after last activity before\n"
-			       "                                   turning off the filter. Default=%.2lf\n"
-			       " -f TYPE, --filter-type=TYPE       Filter out TYPE events from EVDEV2.\n"
-			       "                                   Default=KEY. This option can be declared\n"
-			       "                                   multiple times to define multiple filtered\n"
-			       "                                   types.\n"
-			       " -a TYPE, --activity-type=TYPE     Monitor for TYPE event activity in EVDEV1.\n"
-			       "                                   Default=KEY. This option can be declared\n"
-			       "                                   multiple times to define multiple monitored\n"
-			       "                                   types.\n"
-			       " -m, --monitor-modifiers           Modifier key events (SHIFT, CTRL, ALT)\n"
-			       "                                   are also counted as an activity. This\n"
-			       "                                   is disabled by default. This flag implies\n"
-			       "                                   -a KEY.\n"
-			       " -h --help                         Display this help and exit.\n"
-			       " -V --version                      Output version infromation and exit.\n"
+			       " -i, --idle-time=SECONDS   Filtering for SECONDS after last activity.\n"
+			       " -a, --activity-type=TYPE  Monitor for TYPE event activity in eventX.\n"
+			       " -f, --filter-type=TYPE    Filter out TYPE events from eventY.\n"
+			       " -m, --monitor-modifiers   SHIFT, CTRL and ALT are also counted as an activity.\n"
+			       " -h --help                 Display this help and exit.\n"
+			       " -V --version              Output version infromation and exit.\n"
+                               "\n"
+			       "  /dev/input/eventX - Event device to be monitored for activity.\n"
+			       "  /dev/input/eventY - Event device the filter will be applied to.\n"
+                               "  See HANDLERS-properties in /proc/bus/input/devices for correct values.\n"
 			       "\n"
-			       " Variable descriptions\n"
-			       "  EVDEV1 - Event device to be monitored for activity, e.g. /dev/input/event3 .\n"
-			       "\n"
-			       "  EVDEV2 - Event device the filter will be applied to, e.g. /dev/input/event4 .\n"
-			       "\n"
-			       "  TYPE   - Event type, one of the following:\n"
+			       "  TYPE - Event type, one of the following:\n"
 			       "            KEY - Key or button event.\n"
 			       "\n"
-			       "Event device numbers for EVDEV1 and EVDEV2 are listed in HANDLERS-properties\n"
-			       "in /proc/bus/input/devices .\n"
-			       "\n"
-			       "Report %s bugs to %s\n"
-			       "Home page: %s\n",
+			       "Report %s bugs to <%s>\n"
+			       "Home page: <%s>\n",
 			       program_invocation_name, PACKAGE_DESCRIPTION,
-			       idle_time, PACKAGE_NAME, PACKAGE_BUGREPORT,
+			       PACKAGE_NAME, PACKAGE_BUGREPORT,
                                PACKAGE_URL);
 			exit(EXIT_SUCCESS);
 		case '?':
