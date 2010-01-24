@@ -19,7 +19,5 @@ AC_CONFIG_FILES([
         README
         Makefile
 	src/Makefile
-        etc/init/Makefile
-	etc/init/evdaemon.conf                
 ])
 AC_OUTPUT
