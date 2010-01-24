@@ -1,5 +1,5 @@
-evdaemon (0.1.1-1) unstable; urgency=low
+evdaemon (0.1.2-1ubuntu1) karmic; urgency=low
 
   * Initial release.
 
- -- Tuomas Räsänen (tuos) <tuos@codegrove.org>  Sat, 23 Jan 2010 19:00:18 +0200
+ -- Tuomas Räsänen (tuos) <tuos@codegrove.org>  Sun, 24 Jan 2010 14:23:30 +0200

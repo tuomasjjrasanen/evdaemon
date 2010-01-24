@@ -2,7 +2,7 @@
  @PACKAGE_NAME@ - @PACKAGE_DESCRIPTION@
 ===================================================================
 
-:date: 2010-01-23
+:date: 2010-01-24
 
 .. contents::
 
@@ -19,7 +19,7 @@ not depend on `X Window System <http://www.x.org/wiki/>`_.
 General information
 ===================
 
-- **Author**: `Tuomas Räsänen <http://tuos.codegrove.org/>`_ <tuos@codegrove.org>
+- **Author**: @AUTHOR@
 - **Homepage**: @PACKAGE_URL@
 - **License**: GPLv3+ (see COPYING for details)
 - **Version**: @VERSION@
@@ -31,9 +31,6 @@ Requirements
 - uinput module installed::
 
     sudo modprobe -i uinput
-
-Recommendations
-===============
 
 - Add uinput to the modules automatically loaded on boot if it's not already
   there::
@@ -53,40 +50,17 @@ Installing
 
 The install-procedure adheres the "standard"::
 
-  ./configure --prefix=/usr/local --sysconfdir=/etc
+  ./configure
   make && sudo make install
-
-This installs all files with "safe" ``/usr/local`` prefix, but yet installs
-the default configuration file in the right place. Afterwards, you
-should make sure that proper arguments are given in /etc/evdaemon.conf.
-
-Starting with Upstart
-=====================
-
-By default, evdaemon is configured to be started on runlevels 2-5 and stopped
-when leaving them. See ``etc/init/evdaemon.conf`` for details.
-
-To start and stop evdaemon explicitely with Upstart, simply type::
-
-  start evdaemon
-
-or::
-
-  stop evdaemon
-
-See ``init(5)`` for details.
 
 To get started
 ==============
 
 Start a daemon process to filter out key or button events reported in
-eventY event device for 1.5 seconds after the last key or button event is
-reported in eventX event device::
+``/dev/input/eventY`` event device for 1.5 seconds after the last key or
+button event is reported in ``/dev/input/eventX`` event device::
 
   @PACKAGE_NAME@ -i1.5 /dev/input/eventX /dev/input/eventY
-
-.. note:: Note that in normal setup, this command is not given explicitely in command
-          line, but defined in ``/etc/init/evdaemon.conf`` to be started by Upstart.
 
 X and Y are event device numbers of wanted devices. See HANDLERS-properties
 of devices in /proc/bus/input/devices for correct values::
