@@ -1,4 +1,3 @@
-etc/init/evdaemon.conf
 README
 Makefile
 Makefile.in
@@ -17,4 +16,10 @@ stamp-h1
 *Po
 src/evdaemon.o
 src/evdaemon
-*.tar.gz
+*.gz
+*.build
+index.html
+*.dsc
+*.changes
+etc/init/evdaemon.conf
+evdaemon-*

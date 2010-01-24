@@ -2,8 +2,6 @@
  @PACKAGE_NAME@ - @PACKAGE_DESCRIPTION@
 ===================================================================
 
-:date: 2010-01-24
-
 .. contents::
 
 Description
@@ -19,7 +17,7 @@ not depend on `X Window System <http://www.x.org/wiki/>`_.
 General information
 ===================
 
-- **Author**: @AUTHOR@
+- **Author**: @PACKAGE_AUTHOR@
 - **Homepage**: @PACKAGE_URL@
 - **License**: GPLv3+ (see COPYING for details)
 - **Version**: @VERSION@
@@ -30,7 +28,7 @@ Requirements
 - Linux kernel 2.6.x
 - uinput module installed::
 
-    sudo modprobe -i uinput
+    modprobe -i uinput
 
 - Add uinput to the modules automatically loaded on boot if it's not already
   there::
@@ -40,7 +38,8 @@ Requirements
 Downloading
 ===========
 
-- Tarball is available at: @PACKAGE_URL@@VERSION@/@PACKAGE_NAME@-@VERSION@.tar.gz
+- Tarball is available at: @PACKAGE_URL@releases/@PACKAGE_NAME@-@VERSION@.tar.gz
+- Tarballs of every release at: @PACKAGE_URL@releases/
 - Latest sources from public git-repository: http://github.com/tuos/@PACKAGE_NAME@/ ::
 
     git clone git://github.com/tuos/@PACKAGE_NAME@.git
@@ -48,13 +47,33 @@ Downloading
 Installing
 ==========
 
+Ubuntu
+------
+
+The recommended way to install evdaemon is to
+`add it's PPA to your system <https://launchpad.net/~tuos/+archive/codegrove>`_.
+This allows you to treat evdaemon as any other Ubuntu package.
+
+Other systems
+-------------
+
 The install-procedure adheres the "standard"::
 
   ./configure
-  make && sudo make install
+  make && make install
 
-To get started
-==============
+Configuration
+=============
+
+.. note:: If you are using evdaemon in a system with Upstart
+          (Ubuntu since 6.10 version, Fedora since 9), evdaemon should not
+          be started
+          manually from command line but started automaticall by Upstart.
+          Therefore all the configurations explained in the rest of this
+          section should be defined in ``/etc/init/evdaemon.conf`` instead.
+          The source distribution contains a template configuration file
+          ``etc/init/evdaemon.conf``.
+          Other systems might also use old-style init.d script.
 
 Start a daemon process to filter out key or button events reported in
 ``/dev/input/eventY`` event device for 1.5 seconds after the last key or
@@ -62,7 +81,8 @@ button event is reported in ``/dev/input/eventX`` event device::
 
   @PACKAGE_NAME@ -i1.5 /dev/input/eventX /dev/input/eventY
 
-X and Y are event device numbers of wanted devices. See HANDLERS-properties
+**X** and **Y** are event device numbers of wanted devices.
+See HANDLERS-properties
 of devices in /proc/bus/input/devices for correct values::
 
   I: Bus=0011 Vendor=0001 Product=0001 Version=ab41
