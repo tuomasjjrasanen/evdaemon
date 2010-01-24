@@ -1,4 +1,4 @@
-AC_INIT([evdaemon], [0.1.1], [tuos@codegrove.org], [evdaemon], [http://codegrove.org/evdaemon/])
+AC_INIT([evdaemon], [0.1.2], [tuos@codegrove.org], [evdaemon], [http://codegrove.org/evdaemon/])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])
