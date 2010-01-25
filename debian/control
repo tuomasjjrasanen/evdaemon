@@ -1,5 +1,5 @@
 Source: evdaemon
-Section: unknown
+Section: utils
 Priority: extra
 Maintainer: Tuomas Räsänen (tuos) <tuos@codegrove.org>
 Build-Depends: cdbs, debhelper (>= 7), autotools-dev, libudev-dev
