@@ -51,8 +51,9 @@ extern char *program_invocation_short_name;
 static int running = 1;
 
 /* Args and default values: */
-static double idle_time = 0.75;
-static int    monitor_modifiers = 0;
+static int    arg_daemon = 0;
+static double arg_idle_time = 0.75;
+static int    arg_monitor_modifiers = 0;
 
 void help_and_exit()
 {
@@ -68,6 +69,7 @@ void parse_args(int argc, char **argv)
 		{"filter-type", required_argument, NULL, 'f'},
 		{"activity-type", required_argument, NULL, 'a'},
 		{"monitor-modifiers", no_argument, NULL, 'm'},
+                {"daemon", no_argument, NULL, 'd'},
 		{"version", no_argument, NULL, 'V'},
 		{"help", no_argument, NULL, 'h'},
 		{0, 0, 0, 0}
@@ -83,8 +85,8 @@ void parse_args(int argc, char **argv)
 
 		switch (option) {
 		case 'i':
-			idle_time = strtod(optarg, NULL);
-			if (idle_time <= 0) {
+			arg_idle_time = strtod(optarg, NULL);
+			if (arg_idle_time <= 0) {
 				fprintf(stderr, "%s: incorrect idle time\n",
 					program_invocation_name);
 				help_and_exit();
@@ -95,7 +97,10 @@ void parse_args(int argc, char **argv)
 		case 'a':
 			break;
 		case 'm':
-                        monitor_modifiers = 1;
+                        arg_monitor_modifiers = 1;
+                        break;
+                case 'd':
+                        arg_daemon = 1;
                         break;
 		case 'V':
 			printf("%s %s\n"
@@ -113,6 +118,7 @@ void parse_args(int argc, char **argv)
 			       " -a, --activity-type=TYPE  Monitor for TYPE event activity in eventX.\n"
 			       " -f, --filter-type=TYPE    Filter out TYPE events from eventY.\n"
 			       " -m, --monitor-modifiers   SHIFT, CTRL and ALT are also counted as an activity.\n"
+                               " -d, --daemon              Run as a daemon process.\n"
 			       " -h --help                 Display this help and exit.\n"
 			       " -V --version              Output version infromation and exit.\n"
                                "\n"
@@ -155,7 +161,7 @@ static double timestamp(const struct timeval *tv)
 
 static void sigterm_handler(int signum)
 {
-	syslog(LOG_INFO, "starting to terminate");
+	syslog(LOG_INFO, "stopping");
 	running = 0;
 }
 
@@ -360,11 +366,11 @@ static int handle_mouse(int mouse_fd, int uinput_fd, int *filter,
 		return -1;
 	}
 	if (gettimeofday(&now, NULL) == -1) {
-		syslog(LOG_ERR, "%s: %s", "gettimeofday", strerror(errno));
+                syslog(LOG_ERR, "%s: %s", "gettimeofday", strerror(errno));
 		return -1;
 	}
 
-	if (timestamp(&now) - timestamp(last_kbd) >= idle_time)
+	if (timestamp(&now) - timestamp(last_kbd) >= arg_idle_time)
 		*filter = 0;
 
 	if (*filter) {
@@ -402,7 +408,7 @@ static int handle_kbd(int mouse_fd, int kbd_fd, int *filter,
 	  If we are not monitoring modifier keys, we don't care if they
           are pressed or not.
 	*/
-	if (!monitor_modifiers && IS_MODIFIER_KEY(event.code))
+	if (!arg_monitor_modifiers && IS_MODIFIER_KEY(event.code))
                 return 0;
 
 	if (gettimeofday(last_kbd, NULL) == -1) {
@@ -424,17 +430,21 @@ int main(int argc, char **argv)
 	int              kbd_fd = -1;
 	int              mouse_fd = -1;
 	int              exitval = EXIT_UNDEFINED;
+        int              syslog_options = LOG_ODELAY;
 
 	parse_args(argc, argv);
 
-	openlog(program_invocation_short_name, LOG_ODELAY, LOG_USER);
+        if (!arg_daemon)
+                syslog_options |= LOG_PERROR; /* Log also to stderr. */
 
-	if (daemonize() == -1) {
+	openlog(program_invocation_short_name, syslog_options, LOG_DAEMON);
+
+	if (arg_daemon && daemonize() == -1) {
 		syslog(LOG_ERR, "daemonize: %s", strerror(errno));
 		goto err;
 	}
 
-	syslog(LOG_INFO, "started");
+	syslog(LOG_INFO, "starting");
 
 	sigact.sa_handler = &sigterm_handler;
 
@@ -444,9 +454,14 @@ int main(int argc, char **argv)
 	}
 
 	if (sigaction(SIGTERM, &sigact, NULL) == -1) {
-		syslog(LOG_ERR, "sigaction: %s", strerror(errno));
+		syslog(LOG_ERR, "sigaction SIGTERM: %s", strerror(errno));
 		goto err;
 	}
+
+        if (!arg_daemon && sigaction(SIGINT, &sigact, NULL) == -1) {
+		syslog(LOG_ERR, "sigaction SIGINT: %s", strerror(errno));
+		goto err;
+        }
 
 	if (sigemptyset(&select_sigset) == -1) {
 		syslog(LOG_ERR, "sigemptyset: %s", strerror(errno));
@@ -454,7 +469,12 @@ int main(int argc, char **argv)
 	}
 
 	if (sigaddset(&select_sigset, SIGTERM) == -1) {
-		syslog(LOG_ERR, "sigaddset: %s", strerror(errno));
+		syslog(LOG_ERR, "sigaddset SIGTERM: %s", strerror(errno));
+		goto err;
+	}
+
+	if (!arg_daemon && sigaddset(&select_sigset, SIGINT) == -1) {
+		syslog(LOG_ERR, "sigaddset SIGINT: %s", strerror(errno));
 		goto err;
 	}
 
@@ -478,6 +498,8 @@ int main(int argc, char **argv)
 		goto err;
 	}
 	
+	syslog(LOG_INFO, "started");
+
 	while (running) {
                 fd_set rfds;
 
@@ -508,6 +530,7 @@ int main(int argc, char **argv)
 		}
 	}
 	syslog(LOG_INFO, "stopped");
+	syslog(LOG_INFO, "terminating");
 
 	exitval = EXIT_SUCCESS;
 err:
