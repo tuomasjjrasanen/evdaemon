@@ -12,8 +12,9 @@ libtool
 stamp-h1
 *~
 *Po
-src/evdaemon.o
+src/*.o
 src/evdaemon
+src/.deps
 *.gz
 *.build
 index.html
