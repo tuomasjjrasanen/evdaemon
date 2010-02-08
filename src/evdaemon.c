@@ -65,10 +65,6 @@ void help_and_exit()
 void parse_args(int argc, char **argv)
 {
         const struct option options[] = {
-                {"idle-time", required_argument, NULL, 'i'},
-                {"filter-type", required_argument, NULL, 'f'},
-                {"activity-type", required_argument, NULL, 'a'},
-                {"monitor-modifiers", no_argument, NULL, 'm'},
                 {"daemon", no_argument, NULL, 'd'},
                 {"version", no_argument, NULL, 'V'},
                 {"help", no_argument, NULL, 'h'},
@@ -78,27 +74,12 @@ void parse_args(int argc, char **argv)
         while (1) {
                 int option;
 
-                option = getopt_long(argc, argv, "i:f:a:mVh", options, NULL);
+                option = getopt_long(argc, argv, "Vh", options, NULL);
 
                 if (option == -1)
                         break;
 
                 switch (option) {
-                case 'i':
-                        arg_idle_time = strtod(optarg, NULL);
-                        if (arg_idle_time <= 0) {
-                                fprintf(stderr, "%s: incorrect idle time\n",
-                                        program_invocation_name);
-                                help_and_exit();
-                        }
-                        break;
-                case 'f':
-                        break;
-                case 'a':
-                        break;
-                case 'm':
-                        arg_monitor_modifiers = 1;
-                        break;
                 case 'd':
                         arg_daemon = 1;
                         break;
@@ -111,38 +92,32 @@ void parse_args(int argc, char **argv)
                                PACKAGE_NAME, VERSION, PACKAGE_AUTHOR);
                         exit(EXIT_SUCCESS);
                 case 'h':
-                        printf("Usage: %s [OPTIONS] /dev/input/eventX /dev/input/eventY\n"
+                        printf("Usage: %s [OPTION]...\n"
                                "%s\n"
                                "\n"
-                               " -i, --idle-time=SECONDS   Filtering for SECONDS after last activity.\n"
-                               " -a, --activity-type=TYPE  Monitor for TYPE event activity in eventX.\n"
-                               " -f, --filter-type=TYPE    Filter out TYPE events from eventY.\n"
-                               " -m, --monitor-modifiers   SHIFT, CTRL and ALT are also counted as an activity.\n"
-                               " -d, --daemon              Run as a daemon process.\n"
-                               " -h --help                 Display this help and exit.\n"
-                               " -V --version              Output version infromation and exit.\n"
+                               "Options:\n"
+                               "     --daemon               run as a daemon process\n"
+                               " -h, --help                 display this help and exit\n"
+                               " -V, --version              output version infromation and exit\n"
                                "\n"
-                               "  /dev/input/eventX - Event device to be monitored for activity.\n"
-                               "  /dev/input/eventY - Event device the filter will be applied to.\n"
-                               "  See HANDLERS-properties in /proc/bus/input/devices for correct values.\n"
-                               "\n"
-                               "  TYPE - Event type, one of the following:\n"
-                               "            KEY - Key or button event.\n"
+                               "Processing information and error messages are always printed into syslog. If\n"
+                               "%s is not running as a daemon, logs are also printed into stderr.\n"
                                "\n"
                                "Report %s bugs to <%s>\n"
                                "Home page: <%s>\n",
                                program_invocation_name, PACKAGE_DESCRIPTION,
-                               PACKAGE_NAME, PACKAGE_BUGREPORT,
+                               PACKAGE_NAME, PACKAGE_NAME,
+                               PACKAGE_BUGREPORT,
                                PACKAGE_URL);
                         exit(EXIT_SUCCESS);
                 case '?':
                         help_and_exit();
                 default:
-                        errx(EXIT_FAILURE, "Argument parsing failed.");
+                        errx(EXIT_FAILURE, "argument parsing failed");
                 }		
         }
 
-        if (optind + 2 != argc) {
+        if (optind != argc) {
                 fprintf(stderr, "%s: wrong number of arguments\n",
                         program_invocation_name);
                 help_and_exit();
