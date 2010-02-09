@@ -39,100 +39,103 @@ double timestamp(const struct timeval *tv)
 const char *get_dev_path()
 {
         static char dev_path[_POSIX_PATH_MAX + 1];
+        struct udev *udev; 
         const char *path;
-        struct udev *udev;
+        const char *retval = NULL;
+        int orig_errno;
 
         if ((udev = udev_new()) == NULL)
                 return NULL;
         
-        if ((path = udev_get_dev_path(udev)) == NULL) {
-                udev_unref(udev);
-                return NULL;
-        }
+        if ((path = udev_get_dev_path(udev)) == NULL)
+                goto out;
 
-        if (strlen(path) >= _POSIX_PATH_MAX) {
-                udev_unref(udev);
+        if (strlen(path) > _POSIX_PATH_MAX) {
                 errno = ENAMETOOLONG;
-                return NULL;
+                goto out;
         }        
 
         strncpy(dev_path, path, _POSIX_PATH_MAX);
-
+        retval = dev_path;
+out:
+        orig_errno = errno;
         udev_unref(udev);
-
-        return dev_path;
+        errno = orig_errno;
+        return retval;
 }
 
 const char *get_uinput_devnode()
 {
-        static char        uinput_devnode[_POSIX_PATH_MAX + 1];
-        const char         *devnode;
-        struct udev        *udev;
+        static char uinput_devnode[_POSIX_PATH_MAX + 1];
+        struct udev *udev;
         struct udev_device *udev_dev;
+        const char *devnode;
+        const char *retval = NULL;
+        int orig_errno;
 
         if ((udev = udev_new()) == NULL)
                 return NULL;
 
         udev_dev = udev_device_new_from_subsystem_sysname(udev, "misc",
                                                           "uinput");
-	
-        if (udev_dev == NULL) {
-                udev_unref(udev);
-                return NULL;
-        }
+        if (udev_dev == NULL)
+                goto out;
 
-        if ((devnode = udev_device_get_devnode(udev_dev)) == NULL) {
-                udev_device_unref(udev_dev);
-                udev_unref(udev);
-                return NULL;
-        }
+        if ((devnode = udev_device_get_devnode(udev_dev)) == NULL)
+                goto out;
 
         /* I'm on very defensive mood.. it's due the ignorance. :P */
-        if (strlen(devnode) >= _POSIX_PATH_MAX) {
-                udev_device_unref(udev_dev);
-                udev_unref(udev);
+        if (strlen(devnode) > _POSIX_PATH_MAX) {
                 errno = ENAMETOOLONG;
-                return NULL;
+                goto out;
         }
 
         strncpy(uinput_devnode, devnode, _POSIX_PATH_MAX);
-
+        retval = uinput_devnode;
+out:
+        orig_errno = errno;
         udev_device_unref(udev_dev);
         udev_unref(udev);
-
-        return uinput_devnode;
+        errno = orig_errno;
+        return retval;
 }
 
 int clone_evdev(int evdev_fd)
 {
         struct uinput_user_dev user_dev;
-        struct input_id        id;
-        int                    original_errno = 0;
-        int                    clone_fd = -1;
-        int                    evtype;
-        char                   devname[sizeof(user_dev.name)];
-        uint8_t                evdev_typebits[EV_MAX / 8 + 1];
+        struct input_id id;
+        int orig_errno = 0;
+        int clone_fd;
+        int evtype;
+        char devname[sizeof(user_dev.name)];
+        uint8_t evdev_typebits[EV_MAX / 8 + 1];
+        const char *uinput_devnode;
+        int retval = -1;
 
         if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname)), devname) == -1)
-                goto err;
+                return -1;
 
         if (ioctl(evdev_fd, EVIOCGID, &id) == -1)
-                goto err;
-
-        clone_fd = open(get_uinput_devnode(), O_WRONLY);
-
-        if (clone_fd == -1)
-                goto err;
+                return -1;
 
         if (ioctl(evdev_fd, EVIOCGBIT(0, EV_MAX), evdev_typebits) < 0)
-                goto err;
+                return -1;
+
+        if ((uinput_devnode = get_uinput_devnode()) == NULL)
+                return -1;
+
+        if ((clone_fd = open(uinput_devnode, O_WRONLY)) == -1)
+                return -1;
+
+        /* From now on, resources has to released:
+           goto out instead of plain return.*/
 
         for (evtype = 0; evtype < EV_MAX; ++evtype) {
                 if (bit_test(evtype, evdev_typebits)) {
                         int max_bits = 0;
                         int io;
                         if (ioctl(clone_fd, UI_SET_EVBIT, evtype) == -1) {
-                                goto err;
+                                goto out;
                         }
                         switch (evtype) {
                         case EV_REL:
@@ -175,12 +178,12 @@ int clone_evdev(int evdev_fd)
                                 uint8_t evbits[max_bits / 8 + 1];
                                 if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bits),
                                           evbits) == -1) {
-                                        goto err;
+                                        goto out;
                                 }
                                 for (i = 0; i < max_bits; ++i) {
                                         if (bit_test(i, evbits)
                                             && ioctl(clone_fd, io, i) == -1) {
-                                                goto err;
+                                                goto out;
                                         }
                                 }
                         }
@@ -195,15 +198,15 @@ int clone_evdev(int evdev_fd)
         user_dev.id.version = id.version;
 
         if (write(clone_fd, &user_dev, sizeof(user_dev)) != sizeof(user_dev))
-                goto err;
+                goto out;
 
         if (ioctl(clone_fd, UI_DEV_CREATE) == -1)
-                goto err;
+                goto out;
 
-        return clone_fd;
-err:
-        original_errno = errno;
+        retval = 0;
+out:
+        orig_errno = errno;
         close(clone_fd);
-        errno = original_errno;
-        return -1;
+        errno = orig_errno;
+        return retval;
 }
