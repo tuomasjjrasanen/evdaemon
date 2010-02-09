@@ -23,8 +23,41 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include <stdio.h>
 #include "util.h"
+
+/* Returns
+
+    0 : Everything went just ok and buf is malloced or realloced, the caller is
+        responsible for freeing the memory. Buf does not contain newline
+        character.
+
+   -1 : Syscall failed and errno is set: not changes were made.
+*/
+int freadln(char **buf, size_t *n, const char *path)
+{
+        FILE *file;
+        ssize_t chars;
+        int orig_errno;
+        int retval = -1;
+        
+        if ((file = fopen(path, "r")) == NULL)
+                return -1;
+
+        if ((chars = getline(buf, n, file)) == -1)
+                goto out;
+
+        /* Remove trailing newline character if it exists. */
+        if ((*buf)[chars-1] == '\n')
+                (*buf)[chars-1] = '\0';
+
+        retval = 0;
+out:
+        orig_errno = errno;
+        fclose(file);
+        errno = orig_errno;
+        return retval;
+}
 
 int bit_test(int bit_i, const uint8_t *bytes)
 {

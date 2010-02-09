@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+int freadln(char **buf, size_t *n, const char *path);
+
 int bit_test(int bit_i, const uint8_t *bytes);
 
 double timestamp(const struct timeval *tv);
