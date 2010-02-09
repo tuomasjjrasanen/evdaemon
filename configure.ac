@@ -39,6 +39,10 @@ AX_DEFINE_DIR(
         [sysconfdir/evdaemon/filter/capabilities],
         [Path to capabilities directory of the filter device.])
 AX_DEFINE_DIR(
+        [PATH_FILTER_DURATION],
+        [sysconfdir/evdaemon/filter/duration],
+        [Path to duration file of the filter device.])
+AX_DEFINE_DIR(
         [PATH_MONITOR_NAME],
         [sysconfdir/evdaemon/monitor/name],
         [Path to name file of the monitor device.])
