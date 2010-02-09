@@ -18,11 +18,16 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#define SETTINGS_ERROR_NO_ERROR                   0
+#define SETTINGS_ERROR_DIRTY_FILTER_DURATION_FILE 1
+
 struct settings {
         char   *monitor_devnode;
         char   *filter_devnode;
         double filter_duration;
 };
+
+const char *settings_strerror(int settings_error);
 
 int settings_read(struct settings *settings);
 

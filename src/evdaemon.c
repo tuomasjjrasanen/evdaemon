@@ -184,7 +184,8 @@ static int handle_filter(void)
                 return -1;
         }
 
-        if (timestamp(&now) - timestamp(&last_monitor_tv) >= settings.filter_duration)
+        if (timestamp(&now) - timestamp(&last_monitor_tv)
+            >= settings.filter_duration)
                 is_filtering = 0;
 
         if (is_filtering) {
@@ -224,6 +225,7 @@ int main(int argc, char **argv)
         sigset_t         select_sigset;
         int              exitval = EXIT_FAILURE;
         int              syslog_options = LOG_ODELAY;
+        int              settings_retval;
 
         parse_args(argc, argv);
 
@@ -234,7 +236,7 @@ int main(int argc, char **argv)
 
         if (is_daemon && daemonize() == -1) {
                 syslog(LOG_ERR, "daemonize: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         syslog(LOG_INFO, "starting");
@@ -243,52 +245,67 @@ int main(int argc, char **argv)
 
         if (sigfillset(&sigact.sa_mask) == -1) {
                 syslog(LOG_ERR, "sigfillset: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if (sigaction(SIGTERM, &sigact, NULL) == -1) {
                 syslog(LOG_ERR, "sigaction SIGTERM: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if (!is_daemon && sigaction(SIGINT, &sigact, NULL) == -1) {
                 syslog(LOG_ERR, "sigaction SIGINT: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if (sigemptyset(&select_sigset) == -1) {
                 syslog(LOG_ERR, "sigemptyset: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if (sigaddset(&select_sigset, SIGTERM) == -1) {
                 syslog(LOG_ERR, "sigaddset SIGTERM: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if (!is_daemon && sigaddset(&select_sigset, SIGINT) == -1) {
                 syslog(LOG_ERR, "sigaddset SIGINT: %s", strerror(errno));
-                goto err;
+                goto out;
+        }
+        
+        settings_retval = settings_read(&settings);
+        switch (settings_retval) {
+        case 0:
+                break;
+        case -1:
+                syslog(LOG_ERR, "settings_read: %s", strerror(errno));
+                goto out;
+        default:
+                syslog(LOG_ERR, "settings_read: %s",
+                       settings_strerror(settings_retval));
+                goto out;
         }
 
         if ((monitor_fd = open(settings.monitor_devnode, O_RDONLY)) == -1) {
-                syslog(LOG_ERR, "open %s: %s", settings.monitor_devnode, strerror(errno));
-                goto err;
+                syslog(LOG_ERR, "open %s: %s", settings.monitor_devnode,
+                       strerror(errno));
+                goto out;
         }
 
         if ((filter_fd = open(settings.filter_devnode, O_RDONLY)) == -1) {
-                syslog(LOG_ERR, "open %s: %s", settings.filter_devnode, strerror(errno));
-                goto err;
+                syslog(LOG_ERR, "open %s: %s", settings.filter_devnode,
+                       strerror(errno));
+                goto out;
         }
 
         if (ioctl(filter_fd, EVIOCGRAB, 1) == -1) {
                 syslog(LOG_ERR, "grab filter: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 
         if ((clone_fd = clone_evdev(filter_fd)) == -1) {
                 syslog(LOG_ERR, "clone_evdev: %s", strerror(errno));
-                goto err;
+                goto out;
         }
 	
         syslog(LOG_INFO, "started");
@@ -306,15 +323,15 @@ int main(int argc, char **argv)
                         break;
                 case -1:
                         syslog(LOG_ERR, "select: %s", strerror(errno));
-                        goto err;
+                        goto out;
                 default:
                         if (FD_ISSET(filter_fd, &rfds)) {
                                 if (handle_filter() == -1) {
-                                        goto err;
+                                        goto out;
                                 }
                         } else if (FD_ISSET(monitor_fd, &rfds)) {
                                 if (handle_monitor() == -1) {
-                                        goto err;
+                                        goto out;
                                 }
                         }
                         break;
@@ -324,7 +341,7 @@ int main(int argc, char **argv)
         syslog(LOG_INFO, "terminating");
 
         exitval = EXIT_SUCCESS;
-err:
+out:
         if (ioctl(clone_fd, UI_DEV_DESTROY) == -1) {
                 syslog(LOG_ERR, "destroy clone: %s", strerror(errno));
                 exitval = EXIT_FAILURE;
