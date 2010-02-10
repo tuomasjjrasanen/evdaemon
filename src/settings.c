@@ -49,7 +49,7 @@ static int read_filter_duration(struct settings *settings)
         double duration;
         int retval = -1;
     
-        if (freadln(&filter_duration_line, &filter_duration_line_size,
+        if (readln(&filter_duration_line, &filter_duration_line_size,
                     PATH_FILTER_DURATION) == -1)
                 return -1;
 

@@ -34,7 +34,7 @@
 
    -1 : Syscall failed and errno is set: not changes were made.
 */
-int freadln(char **buf, size_t *n, const char *path)
+int readln(char **buf, size_t *n, const char *path)
 {
         FILE *file;
         ssize_t chars;
