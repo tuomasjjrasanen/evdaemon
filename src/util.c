@@ -24,7 +24,83 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <glob.h>
+#include <stdlib.h>
+
 #include "util.h"
+
+static int open_matching(const char *path, const char *name)
+{
+        int cmp_result = -2;
+        int fd = -1;
+        char *other_name;
+        int orig_errno;
+        size_t name_size = strlen(name) + 1;
+        other_name = (char *) calloc(name_size, sizeof(char));
+
+        if (other_name == NULL)
+                return -1;
+
+        if ((fd = open(path, O_RDONLY)) == -1)
+                goto out;
+
+        if (ioctl(fd, EVIOCGNAME(name_size - 1), other_name) == -1)
+                goto out;
+
+        cmp_result = strcmp(name, other_name);
+out:
+        orig_errno = errno;
+        if (fd != -1 && cmp_result != 0) {
+                close(fd);
+                fd = -1;
+        }
+        free(other_name);
+        errno = orig_errno;
+        return fd;
+}
+
+int open_evdev_by_name(const char *name)
+{
+        int i;
+        glob_t g;
+        const char *devroot_path;
+        int fd = -1;
+        char *pattern;
+        const char pattern_tail[] = "/input/event*";
+        int orig_errno;
+
+        if ((devroot_path = get_devroot_path()) == NULL)
+                return -1;
+
+        pattern = (char *) calloc(strlen(devroot_path) + sizeof(pattern_tail),
+                                  sizeof(char));
+        if (pattern == NULL)
+                goto out;
+
+        strcat(strcpy(pattern, devroot_path), pattern_tail);
+        switch (glob(pattern, GLOB_ERR | GLOB_NOSORT, NULL, &g)) {
+        case 0:
+                break;
+        case GLOB_NOMATCH:
+                errno = ENOENT;
+        default:
+                goto out;
+        }
+
+        for (i = 0; i < g.gl_pathc; ++i) {
+                if ((fd = open_matching(g.gl_pathv[i], name)) != -1)
+                        break;
+        }
+        if (fd == -1)
+                errno = ENOENT;
+out:
+        orig_errno = errno;
+        free(pattern);
+        pattern = NULL;
+        globfree(&g);
+        errno = orig_errno;
+        return fd;
+}
 
 /* Returns
 
@@ -69,7 +145,7 @@ double timestamp(const struct timeval *tv)
         return tv->tv_sec + (tv->tv_usec / 1000000.0);
 }
 
-const char *get_dev_path()
+const char *get_devroot_path()
 {
         static char dev_path[_POSIX_PATH_MAX + 1];
         struct udev *udev; 
@@ -145,7 +221,7 @@ int clone_evdev(int evdev_fd)
         const char *uinput_devnode;
         int retval = -1;
 
-        if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname)), devname) == -1)
+        if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname) - 1), devname) == -1)
                 return -1;
 
         if (ioctl(evdev_fd, EVIOCGID, &id) == -1)

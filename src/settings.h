@@ -22,13 +22,17 @@
 #define SETTINGS_ERROR_DIRTY_FILTER_DURATION_FILE 1
 
 struct settings {
-        char   *monitor_devnode;
-        char   *filter_devnode;
+        char   *monitor_name;
+        size_t monitor_name_size;
+        char   *filter_name;
+        size_t filter_name_size;
         double filter_duration;
 };
 
 const char *settings_strerror(int settings_error);
 
 int settings_read(struct settings *settings);
+
+void settings_free(struct settings *settings);
 
 #endif /* SETTINGS_H */

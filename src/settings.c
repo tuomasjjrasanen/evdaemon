@@ -72,13 +72,99 @@ out:
         return retval;
 }
 
-static int query_filter_devnode(struct settings *settings)
+/* static int query_devnode(char **dst, size_t *size, const char *name) */
+/* { */
+/*         FILE *devlistfile; */
+/*         int retval = -1; */
+/*         int devlistfile_charc; */
+/*         char *devlistfile_chars = NULL; */
+/*         size_t chars_fread; */
+/*         size_t devlistfile_chars_size; */
+
+/*         if ((devlistfile = fopen("/proc/bus/input/devices", "r")) == NULL) */
+/*             return -1; */
+
+/*         if (fseek(devlistfile, 0, SEEK_END) == -1) */
+/*                 goto out; */
+
+/*         if ((devlistfile_charc = ftell(devlistfile)) == -1) */
+/*                 goto out; */
+
+/*         rewind(devlistfile); */
+
+/*         devlistfile_chars_size = devlistfile_charc + 1; */
+/*         devlistfile_chars = (char *) calloc(devlistfile_chars_size, */
+/*                                             sizeof(char)); */
+
+/*         if (devlistfile_chars == NULL) */
+/*                 goto out; */
+
+/*         chars_fread = fread(devlistfile_chars, sizeof(char), devlistfile_charc, */
+/*                             devlistfile); */
+
+/*         if (chars_fread != devlistfile_charc) */
+/*                 goto out; */
+
+        
+
+/*         retval = 0; */
+/* out: */
+/*         free(devlistfile_chars); */
+/*         fclose(devlistfile); */
+/*         return retval; */
+/* } */
+
+/* static int query_filter_devnode(struct settings *settings) */
+/* { */
+/*         char *name = NULL; */
+/*         size_t name_size; */
+/*         int retval = -1; */
+
+/*         if (readln(&name, &name_size, PATH_FILTER_NAME) == -1) */
+/*                 return -1; */
+
+/*         if (query_devnode(&settings->filter_devnode, */
+/*                           &settings->filter_devnode_size, name) == -1) */
+/*                 goto out; */
+
+/*         retval = 0; */
+/* out: */
+/*         free(name); */
+/*         return retval; */
+/* } */
+
+/* static int query_monitor_devnode(struct settings *settings) */
+/* { */
+/*         char *name = NULL; */
+/*         size_t name_size; */
+/*         int retval = -1; */
+
+/*         if (readln(&name, &name_size, PATH_MONITOR_NAME) == -1) */
+/*                 return -1; */
+
+/*         if (query_devnode(&settings->monitor_devnode, */
+/*                           &settings->monitor_devnode_size, name) == -1) */
+/*                 goto out; */
+
+/*         retval = 0; */
+/* out: */
+/*         free(name); */
+/*         return retval; */
+/* } */
+
+static int read_filter_name(struct settings *settings)
 {
+        if (readln(&settings->filter_name, &settings->filter_name_size,
+                   PATH_FILTER_NAME) == -1)
+                return -1;
         return 0;
 }
 
-static int query_monitor_devnode(struct settings *settings)
+static int read_monitor_name(struct settings *settings)
 {
+        if (readln(&settings->monitor_name, &settings->monitor_name_size,
+                   PATH_MONITOR_NAME) == -1)
+                return -1;
         return 0;
 }
 
@@ -89,9 +175,9 @@ int settings_read(struct settings *settings)
 
         if ((retval = read_filter_duration(&tmp_settings)) != 0)
                 return retval;
-        if ((retval = query_filter_devnode(&tmp_settings)) != 0)
+        if ((retval = read_filter_name(&tmp_settings)) != 0)
                 return retval;
-        if ((retval = query_monitor_devnode(&tmp_settings)) != 0)
+        if ((retval = read_monitor_name(&tmp_settings)) != 0)
                 return retval;
 
         /* Safe to copy fresh settings because no error was detected.*/
@@ -106,4 +192,14 @@ const char *settings_strerror(int settings_error)
                 return SETTINGS_ERROR_STRS[settings_error];
         }
         return SETTINGS_ERROR_UNKNOWN;
+}
+
+void settings_free(struct settings *settings)
+{
+        free(settings->filter_name);
+        settings->filter_name = NULL;
+        settings->filter_name_size = 0;
+        free(settings->monitor_name);
+        settings->monitor_name = NULL;
+        settings->monitor_name_size = 0;
 }

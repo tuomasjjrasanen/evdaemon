@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+int open_evdev_by_name(const char *name);
+
 int readln(char **buf, size_t *n, const char *path);
 
 int bit_test(int bit_i, const uint8_t *bytes);
@@ -30,5 +32,7 @@ double timestamp(const struct timeval *tv);
 const char *get_uinput_devnode();
 
 int clone_evdev(int evdev_fd);
+
+const char *get_devroot_path();
 
 #endif /* UTIL_H */

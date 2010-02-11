@@ -44,7 +44,7 @@ static int            filter_fd        = -1;
 static int            clone_fd         = -1;
 static int            monitor_fd       = -1;
 static struct timeval last_monitor_tv;
-static struct settings settings = {NULL, NULL, 1.0};
+static struct settings settings = {NULL, 0, NULL, 0, 1.0};
 
 void help_and_exit(void)
 {
@@ -286,14 +286,14 @@ int main(int argc, char **argv)
                 goto out;
         }
 
-        if ((monitor_fd = open(settings.monitor_devnode, O_RDONLY)) == -1) {
-                syslog(LOG_ERR, "open %s: %s", settings.monitor_devnode,
+        if ((monitor_fd = open_evdev_by_name(settings.monitor_name)) == -1) {
+                syslog(LOG_ERR, "open monitor %s: %s", settings.monitor_name,
                        strerror(errno));
                 goto out;
         }
 
-        if ((filter_fd = open(settings.filter_devnode, O_RDONLY)) == -1) {
-                syslog(LOG_ERR, "open %s: %s", settings.filter_devnode,
+        if ((filter_fd = open_evdev_by_name(settings.filter_name)) == -1) {
+                syslog(LOG_ERR, "open filter %s: %s", settings.filter_name,
                        strerror(errno));
                 goto out;
         }
@@ -342,29 +342,37 @@ int main(int argc, char **argv)
 
         exitval = EXIT_SUCCESS;
 out:
-        if (ioctl(clone_fd, UI_DEV_DESTROY) == -1) {
-                syslog(LOG_ERR, "destroy clone: %s", strerror(errno));
-                exitval = EXIT_FAILURE;
+        settings_free(&settings);
+
+        if (clone_fd != -1) {
+                if (ioctl(clone_fd, UI_DEV_DESTROY) == -1) {
+                        syslog(LOG_ERR, "destroy clone: %s", strerror(errno));
+                        exitval = EXIT_FAILURE;
+                }
+        
+                if (close(clone_fd) == -1) {
+                        syslog(LOG_ERR, "close clone: %s", strerror(errno));
+                        exitval = EXIT_FAILURE;
+                }
         }
 
-        if (close(clone_fd) == -1) {
-                syslog(LOG_ERR, "close clone: %s", strerror(errno));
-                exitval = EXIT_FAILURE;
+        if (filter_fd != -1) {
+                if (ioctl(filter_fd, EVIOCGRAB, 0) == -1) {
+                        syslog(LOG_ERR, "release filter: %s", strerror(errno));
+                        exitval = EXIT_FAILURE;
+                }
+
+                if (close(filter_fd) == -1) {
+                        syslog(LOG_ERR, "close filter: %s", strerror(errno));
+                        exitval = EXIT_FAILURE;
+                }
         }
 
-        if (ioctl(filter_fd, EVIOCGRAB, 0) == -1) {
-                syslog(LOG_ERR, "release filter: %s", strerror(errno));
-                exitval = EXIT_FAILURE;
-        }
-
-        if (close(filter_fd) == -1) {
-                syslog(LOG_ERR, "close filter: %s", strerror(errno));
-                exitval = EXIT_FAILURE;
-        }
-
-        if (close(monitor_fd) == -1) {
-                syslog(LOG_ERR, "close monitor: %s", strerror(errno));
-                exitval = EXIT_FAILURE;
+        if (monitor_fd != -1) {
+                if (close(monitor_fd) == -1) {
+                        syslog(LOG_ERR, "close monitor: %s", strerror(errno));
+                        exitval = EXIT_FAILURE;
+                }
         }
 
         syslog(LOG_INFO, "terminated");
