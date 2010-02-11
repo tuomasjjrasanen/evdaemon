@@ -104,9 +104,9 @@ out:
 
 /* Returns
 
-    0 : Everything went just ok and buf is malloced or realloced, the caller is
-        responsible for freeing the memory. Buf does not contain newline
-        character.
+   0 : Everything went just ok and buf is malloced or realloced, the caller is
+   responsible for freeing the memory. Buf does not contain newline
+   character.
 
    -1 : Syscall failed and errno is set: not changes were made.
 */
@@ -299,14 +299,15 @@ int clone_evdev(int evdev_fd)
                 }
         }
 
-        memset(&user_dev, 0, sizeof(user_dev));
+        memset(&user_dev, 0, sizeof(struct uinput_user_dev));
         strcpy(user_dev.name, devname);
         user_dev.id.bustype = id.bustype;
         user_dev.id.vendor = id.vendor;
         user_dev.id.product = id.product;
         user_dev.id.version = id.version;
 
-        if (write(clone_fd, &user_dev, sizeof(user_dev)) != sizeof(user_dev))
+        if (write(clone_fd, &user_dev, sizeof(struct uinput_user_dev))
+            != sizeof(struct uinput_user_dev))
                 goto out;
 
         if (ioctl(clone_fd, UI_DEV_CREATE) == -1)

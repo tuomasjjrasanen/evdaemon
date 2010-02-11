@@ -44,7 +44,7 @@ static int            filter_fd        = -1;
 static int            clone_fd         = -1;
 static int            monitor_fd       = -1;
 static struct timeval last_monitor_tv;
-static struct settings settings = {NULL, 0, NULL, 0, 1.0};
+static struct settings settings;
 
 void help_and_exit(void)
 {
@@ -175,12 +175,12 @@ static int handle_filter(void)
         struct timeval     now;
         struct input_event event;
 
-        if (read(filter_fd, &event, sizeof(event)) == -1) {
-                syslog(LOG_ERR, "%s: %s", "filter read", strerror(errno));
+        if (read(filter_fd, &event, sizeof(struct input_event)) == -1) {
+                syslog(LOG_ERR, "filter read: %s", strerror(errno));
                 return -1;
         }
         if (gettimeofday(&now, NULL) == -1) {
-                syslog(LOG_ERR, "%s: %s", "gettimeofday", strerror(errno));
+                syslog(LOG_ERR, "gettimeofday: %s", strerror(errno));
                 return -1;
         }
 
@@ -192,7 +192,8 @@ static int handle_filter(void)
                 if (event.type == EV_KEY)
                         return 0;
         }
-        if (write(clone_fd, &event, sizeof(event)) != sizeof(event))
+        if (write(clone_fd, &event, sizeof(struct input_event))
+            != sizeof(struct input_event))
                 return -1;
         return 0;
 }
@@ -201,8 +202,8 @@ static int handle_monitor(void)
 {
         struct input_event event;
 
-        if (read(monitor_fd, &event, sizeof(event)) == -1) {
-                syslog(LOG_ERR, "%s: %s", "monitor read", strerror(errno));
+        if (read(monitor_fd, &event, sizeof(struct input_event)) == -1) {
+                syslog(LOG_ERR, "monitor read: %s", strerror(errno));
                 return -1;
         }
 
@@ -211,7 +212,7 @@ static int handle_monitor(void)
         }
 
         if (gettimeofday(&last_monitor_tv, NULL) == -1) {
-                syslog(LOG_ERR, "%s: %s", "gettimeofday", strerror(errno));
+                syslog(LOG_ERR, "gettimeofday: %s", strerror(errno));
                 return -1;
         }
         is_filtering = 1;
@@ -241,6 +242,7 @@ int main(int argc, char **argv)
 
         syslog(LOG_INFO, "starting");
 
+        memset(&sigact, 0, sizeof(struct sigaction));
         sigact.sa_handler = &sigterm_handler;
 
         if (sigfillset(&sigact.sa_mask) == -1) {

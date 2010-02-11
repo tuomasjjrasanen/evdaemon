@@ -35,7 +35,7 @@ static const char *SETTINGS_ERROR_STRS[] = {
 
 /* Returns
 
-    0 : Everything went just ok and settings were updated.
+   0 : Everything went just ok and settings were updated.
 
    -1 : Syscall failed and errno is set: no changes were made.
 
@@ -50,7 +50,7 @@ static int read_filter_duration(struct settings *settings)
         int retval = -1;
     
         if (readln(&filter_duration_line, &filter_duration_line_size,
-                    PATH_FILTER_DURATION) == -1)
+                   PATH_FILTER_DURATION) == -1)
                 return -1;
 
         errno = 0; /* Needed to distinguish errors from real return values. */
@@ -72,86 +72,6 @@ out:
         return retval;
 }
 
-/* static int query_devnode(char **dst, size_t *size, const char *name) */
-/* { */
-/*         FILE *devlistfile; */
-/*         int retval = -1; */
-/*         int devlistfile_charc; */
-/*         char *devlistfile_chars = NULL; */
-/*         size_t chars_fread; */
-/*         size_t devlistfile_chars_size; */
-
-/*         if ((devlistfile = fopen("/proc/bus/input/devices", "r")) == NULL) */
-/*             return -1; */
-
-/*         if (fseek(devlistfile, 0, SEEK_END) == -1) */
-/*                 goto out; */
-
-/*         if ((devlistfile_charc = ftell(devlistfile)) == -1) */
-/*                 goto out; */
-
-/*         rewind(devlistfile); */
-
-/*         devlistfile_chars_size = devlistfile_charc + 1; */
-/*         devlistfile_chars = (char *) calloc(devlistfile_chars_size, */
-/*                                             sizeof(char)); */
-
-/*         if (devlistfile_chars == NULL) */
-/*                 goto out; */
-
-/*         chars_fread = fread(devlistfile_chars, sizeof(char), devlistfile_charc, */
-/*                             devlistfile); */
-
-/*         if (chars_fread != devlistfile_charc) */
-/*                 goto out; */
-
-        
-
-/*         retval = 0; */
-/* out: */
-/*         free(devlistfile_chars); */
-/*         fclose(devlistfile); */
-/*         return retval; */
-/* } */
-
-/* static int query_filter_devnode(struct settings *settings) */
-/* { */
-/*         char *name = NULL; */
-/*         size_t name_size; */
-/*         int retval = -1; */
-
-/*         if (readln(&name, &name_size, PATH_FILTER_NAME) == -1) */
-/*                 return -1; */
-
-/*         if (query_devnode(&settings->filter_devnode, */
-/*                           &settings->filter_devnode_size, name) == -1) */
-/*                 goto out; */
-
-/*         retval = 0; */
-/* out: */
-/*         free(name); */
-/*         return retval; */
-/* } */
-
-/* static int query_monitor_devnode(struct settings *settings) */
-/* { */
-/*         char *name = NULL; */
-/*         size_t name_size; */
-/*         int retval = -1; */
-
-/*         if (readln(&name, &name_size, PATH_MONITOR_NAME) == -1) */
-/*                 return -1; */
-
-/*         if (query_devnode(&settings->monitor_devnode, */
-/*                           &settings->monitor_devnode_size, name) == -1) */
-/*                 goto out; */
-
-/*         retval = 0; */
-/* out: */
-/*         free(name); */
-/*         return retval; */
-/* } */
-
 static int read_filter_name(struct settings *settings)
 {
         if (readln(&settings->filter_name, &settings->filter_name_size,
@@ -172,6 +92,8 @@ int settings_read(struct settings *settings)
 {
         int retval;
         struct settings tmp_settings;
+
+        memset(&tmp_settings, 0, sizeof(struct settings));
 
         if ((retval = read_filter_duration(&tmp_settings)) != 0)
                 return retval;
@@ -197,9 +119,6 @@ const char *settings_strerror(int settings_error)
 void settings_free(struct settings *settings)
 {
         free(settings->filter_name);
-        settings->filter_name = NULL;
-        settings->filter_name_size = 0;
         free(settings->monitor_name);
-        settings->monitor_name = NULL;
-        settings->monitor_name_size = 0;
+        memset(settings, 0, sizeof(struct settings));
 }
