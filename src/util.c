@@ -84,6 +84,7 @@ int open_evdev_by_name(const char *name)
                 break;
         case GLOB_NOMATCH:
                 errno = ENOENT;
+                /* Fall trough. */
         default:
                 goto out;
         }
@@ -208,20 +209,19 @@ out:
         return retval;
 }
 
-int clone_evdev(int evdev_fd)
+int clone_evdev(int evdev_fd, const struct input_id *clone_id,
+                const char *clone_name)
 {
         struct uinput_user_dev user_dev;
         struct input_id id;
         int orig_errno = 0;
         int clone_fd;
         int evtype;
-        char devname[sizeof(user_dev.name)];
         uint8_t evdev_typebits[EV_MAX / 8 + 1];
         const char *uinput_devnode;
         int got_err = 1;
 
-        if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname) - 1), devname) == -1)
-                return -1;
+        memset(&evdev_typebits, 0, sizeof(evdev_typebits));
 
         if (ioctl(evdev_fd, EVIOCGID, &id) == -1)
                 return -1;
@@ -284,6 +284,7 @@ int clone_evdev(int evdev_fd)
                         if (max_bits) {
                                 int i;
                                 uint8_t evbits[max_bits / 8 + 1];
+                                memset(&evbits, 0, sizeof(evbits));
                                 if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bits),
                                           evbits) == -1) {
                                         goto out;
@@ -299,11 +300,11 @@ int clone_evdev(int evdev_fd)
         }
 
         memset(&user_dev, 0, sizeof(struct uinput_user_dev));
-        strcpy(user_dev.name, devname);
-        user_dev.id.bustype = id.bustype;
-        user_dev.id.vendor = id.vendor;
-        user_dev.id.product = id.product;
-        user_dev.id.version = id.version;
+        strncpy(user_dev.name, clone_name, UINPUT_MAX_NAME_SIZE - 1);
+        user_dev.id.bustype = clone_id->bustype;
+        user_dev.id.vendor = clone_id->vendor;
+        user_dev.id.product = clone_id->product;
+        user_dev.id.version = clone_id->version;
 
         if (write(clone_fd, &user_dev, sizeof(struct uinput_user_dev))
             != sizeof(struct uinput_user_dev))

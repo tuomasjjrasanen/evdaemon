@@ -18,15 +18,23 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#define SETTINGS_ERROR_NO_ERROR                   0
-#define SETTINGS_ERROR_DIRTY_FILTER_DURATION_FILE 1
+#include <linux/uinput.h>
+
+#define SETTINGS_ERROR_NO_ERROR         0
+#define SETTINGS_ERROR_FILTER_DURATION  1
+#define SETTINGS_ERROR_CLONE_ID_BUSTYPE 2
+#define SETTINGS_ERROR_CLONE_ID_VENDOR  3
+#define SETTINGS_ERROR_CLONE_ID_PRODUCT 4
+#define SETTINGS_ERROR_CLONE_ID_VERSION 5
 
 struct settings {
-        char   *monitor_name;
+        char *monitor_name;
         size_t monitor_name_size;
-        char   *filter_name;
+        char *filter_name;
         size_t filter_name_size;
         double filter_duration;
+        char clone_name[UINPUT_MAX_NAME_SIZE];
+        struct input_id clone_id;
 };
 
 const char *settings_strerror(int settings_error);

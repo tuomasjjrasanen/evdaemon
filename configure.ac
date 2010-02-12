@@ -12,7 +12,7 @@ PACKAGE_AUTHOR=$(cat AUTHORS | head -n1)
 PACKAGE_DESCRIPTION="Monitor Linux event devices and modify their behavior."
 AX_DEFINE_DIR(
         [PATH_CLONE_NAME],
-        [sysconfdir/evademon/clone/name],
+        [sysconfdir/evdaemon/clone/name],
         [Path to name file of the clone devie.])
 AX_DEFINE_DIR(
         [PATH_CLONE_ID_BUSTYPE],

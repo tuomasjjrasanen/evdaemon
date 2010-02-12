@@ -31,7 +31,8 @@ double timestamp(const struct timeval *tv);
 
 const char *get_uinput_devnode();
 
-int clone_evdev(int evdev_fd);
+int clone_evdev(int evdev_fd, const struct input_id *clone_id,
+                const char *clone_name);
 
 const char *get_devroot_path();
 

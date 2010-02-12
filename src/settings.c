@@ -19,16 +19,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "config.h"
 #include "settings.h"
 #include "util.h"
 
-#define SETTINGS_ERROR_COUNT 2
-
-static const char *SETTINGS_ERROR_STRS[] = {
+#define SETTINGS_ERROR_COUNT 6
+static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "",
         "dirty or empty filter duration file",
+        "dirty or empty clone id bustype file",
+        "dirty or empty clone id vendor file",
+        "dirty or empty clone id product file",
+        "dirty or empty clone id version file",
 };
 
 #define SETTINGS_ERROR_UNKNOWN "unknown settings error"
@@ -60,7 +64,7 @@ static int read_filter_duration(struct settings *settings)
 
         /* No conversion was made because the file was empty or dirty. */
         if (duration == 0 && filter_duration_line == strtod_endptr) {
-                retval = SETTINGS_ERROR_DIRTY_FILTER_DURATION_FILE;
+                retval = SETTINGS_ERROR_FILTER_DURATION;
                 goto out;
         }
 
@@ -88,6 +92,105 @@ static int read_monitor_name(struct settings *settings)
         return 0;
 }
 
+static int read_clone_name(struct settings *settings)
+{
+        FILE *file;
+        size_t chars_fread;
+        int retval = -1;
+        int orig_errno;
+
+        if ((file = fopen(PATH_CLONE_NAME, "r")) == NULL)
+                return -1;
+
+        chars_fread = fread(settings->clone_name, sizeof(char),
+                            UINPUT_MAX_NAME_SIZE - 1, file);
+
+        if (ferror(file))
+                goto out;
+
+        /* Remove trailing newline character if it exists. */
+        if (settings->clone_name[chars_fread-1] == '\n')
+                settings->clone_name[chars_fread-1] = '\0';
+
+        retval = 0;
+out:
+        orig_errno = errno;
+        fclose(file);
+        errno = orig_errno;
+        return retval;
+}
+
+static int read_clone_id_member(uint16_t *valuep, const char *path,
+                                int errretval)
+{
+        char *line = NULL;
+        size_t line_size;
+        char *strtoul_endptr = NULL;
+        unsigned long int value;
+        int retval = -1;
+    
+        if (readln(&line, &line_size, path) == -1)
+                return -1;
+
+        errno = 0; /* Needed to distinguish errors from real return values. */
+        value = strtoul(line, &strtoul_endptr, 10);
+        if (errno != 0)
+                goto out;
+
+        /* No conversion was made because the file was empty or dirty. */
+        if (value == 0 && line == strtoul_endptr) {
+                retval = errretval;
+                goto out;
+        }
+
+        if (value > USHRT_MAX) {
+                errno = ERANGE;
+                goto out;
+        }
+
+        *valuep = (uint16_t) value;
+        retval = 0;
+out:
+        free(line);
+        line = NULL;
+        return retval;
+}
+
+static int read_clone_id(struct input_id *clone_id)
+{
+        int retval;
+        struct input_id tmp_clone_id;
+
+        memset(&tmp_clone_id, 0, sizeof(struct input_id));
+
+        retval = read_clone_id_member(&tmp_clone_id.bustype,
+                                      PATH_CLONE_ID_BUSTYPE,
+                                      SETTINGS_ERROR_CLONE_ID_BUSTYPE);
+        if (retval != 0)
+                return retval;
+
+        retval = read_clone_id_member(&tmp_clone_id.vendor,
+                                      PATH_CLONE_ID_VENDOR,
+                                      SETTINGS_ERROR_CLONE_ID_VENDOR);
+        if (retval != 0)
+                return retval;
+
+        retval = read_clone_id_member(&tmp_clone_id.product,
+                                      PATH_CLONE_ID_PRODUCT,
+                                      SETTINGS_ERROR_CLONE_ID_PRODUCT);
+        if (retval != 0)
+                return retval;
+
+        retval = read_clone_id_member(&tmp_clone_id.version,
+                                      PATH_CLONE_ID_VERSION,
+                                      SETTINGS_ERROR_CLONE_ID_VERSION);
+        if (retval != 0)
+                return retval;
+
+        memcpy(clone_id, &tmp_clone_id, sizeof(struct input_id));
+        return 0;
+}
+
 int settings_read(struct settings *settings)
 {
         int retval;
@@ -100,6 +203,10 @@ int settings_read(struct settings *settings)
         if ((retval = read_filter_name(&tmp_settings)) != 0)
                 return retval;
         if ((retval = read_monitor_name(&tmp_settings)) != 0)
+                return retval;
+        if ((retval = read_clone_name(&tmp_settings)) != 0)
+                return retval;
+        if ((retval = read_clone_id(&tmp_settings.clone_id)) != 0)
                 return retval;
 
         /* Safe to copy fresh settings because no error was detected.*/

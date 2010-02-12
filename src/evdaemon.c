@@ -305,7 +305,8 @@ int main(int argc, char **argv)
                 goto out;
         }
 
-        if ((clone_fd = clone_evdev(filter_fd)) == -1) {
+        if ((clone_fd = clone_evdev(filter_fd, &settings.clone_id,
+                                    settings.clone_name)) == -1) {
                 syslog(LOG_ERR, "clone_evdev: %s", strerror(errno));
                 goto out;
         }
