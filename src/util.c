@@ -219,7 +219,7 @@ int clone_evdev(int evdev_fd)
         char devname[sizeof(user_dev.name)];
         uint8_t evdev_typebits[EV_MAX / 8 + 1];
         const char *uinput_devnode;
-        int retval = -1;
+        int got_err = 1;
 
         if (ioctl(evdev_fd, EVIOCGNAME(sizeof(devname) - 1), devname) == -1)
                 return -1;
@@ -313,10 +313,13 @@ int clone_evdev(int evdev_fd)
         if (ioctl(clone_fd, UI_DEV_CREATE) == -1)
                 goto out;
 
-        retval = 0;
+        got_err = 0;
 out:
         orig_errno = errno;
-        close(clone_fd);
+        if (got_err && clone_fd != -1) {
+                close(clone_fd);
+                clone_fd = -1;
+        }
         errno = orig_errno;
-        return retval;
+        return clone_fd;
 }
