@@ -47,7 +47,8 @@ static int open_matching(const char *path, const char *name)
         if (ioctl(fd, EVIOCGNAME(name_size - 1), other_name) == -1)
                 goto out;
 
-        cmp_result = strcmp(name, other_name);
+        if ((cmp_result = strcmp(name, other_name)) != 0)
+                errno = ENOENT;
 out:
         orig_errno = errno;
         if (fd != -1 && cmp_result != 0) {
@@ -91,8 +92,6 @@ int open_evdev_by_name(const char *name)
                 if ((fd = open_matching(g.gl_pathv[i], name)) != -1)
                         break;
         }
-        if (fd == -1)
-                errno = ENOENT;
 out:
         orig_errno = errno;
         free(pattern);
