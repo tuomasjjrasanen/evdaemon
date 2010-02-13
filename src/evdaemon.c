@@ -189,7 +189,8 @@ static int handle_filter(void)
                 is_filtering = 0;
 
         if (is_filtering) {
-                if (event.type == EV_KEY)
+                if (event.type == EV_KEY
+                    && bit_test(event.code, settings.filter_key_valuev))
                         return 0;
         }
         if (write(clone_fd, &event, sizeof(struct input_event))
@@ -210,6 +211,9 @@ static int handle_monitor(void)
         if (event.type != EV_KEY) {
                 return 0;
         }
+
+        if (!bit_test(event.code, settings.monitor_key_valuev))
+                return 0;
 
         if (gettimeofday(&last_monitor_tv, NULL) == -1) {
                 syslog(LOG_ERR, "gettimeofday: %s", strerror(errno));
