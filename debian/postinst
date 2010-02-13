@@ -22,10 +22,6 @@ case "$1" in
     configure)
         modprobe -i uinput
         grep -q uinput /etc/modules || echo uinput >> /etc/modules
-        EVDEV1=`find /dev/input/by-path/ -regex .*-event-kbd* | tail -n1 | xargs readlink -e || echo /dev/input/eventX`
-        EVDEV2=`find /dev/input/by-path/ -regex .*-event-mouse* | tail -n1 | xargs readlink -e || echo /dev/input/eventY`
-        sed -i "s,/dev/input/eventX,$EVDEV1," /etc/init/evdaemon.conf
-        sed -i "s,/dev/input/eventY,$EVDEV2," /etc/init/evdaemon.conf
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
