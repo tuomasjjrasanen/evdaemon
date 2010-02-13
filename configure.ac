@@ -72,8 +72,6 @@ AC_CONFIG_FILES([
         Makefile
         src/Makefile
         etc/Makefile
-        etc/init/Makefile
-        etc/init/evdaemon.conf
         etc/evdaemon/Makefile
 ])
 AC_OUTPUT

@@ -1,1 +1,1 @@
-SUBDIRS = init evdaemon
+SUBDIRS = evdaemon
