@@ -19,13 +19,19 @@
 #define SETTINGS_H
 
 #include <linux/uinput.h>
+#include <stdint.h>
 
-#define SETTINGS_ERROR_NO_ERROR         0
-#define SETTINGS_ERROR_FILTER_DURATION  1
-#define SETTINGS_ERROR_CLONE_ID_BUSTYPE 2
-#define SETTINGS_ERROR_CLONE_ID_VENDOR  3
-#define SETTINGS_ERROR_CLONE_ID_PRODUCT 4
-#define SETTINGS_ERROR_CLONE_ID_VERSION 5
+#define SETTINGS_ERROR_NO_ERROR          0
+#define SETTINGS_ERROR_UNKNOWN           1
+#define SETTINGS_ERROR_FILTER_DURATION   2
+#define SETTINGS_ERROR_CLONE_ID_BUSTYPE  3
+#define SETTINGS_ERROR_CLONE_ID_VENDOR   4
+#define SETTINGS_ERROR_CLONE_ID_PRODUCT  5
+#define SETTINGS_ERROR_CLONE_ID_VERSION  6
+#define SETTINGS_ERROR_DIRTY_MONITOR_KEY 7
+#define SETTINGS_ERROR_DIRTY_FILTER_KEY  8
+
+#define KEY_VALUEC (KEY_MAX / 64 + 1)
 
 struct settings {
         char *monitor_name;
@@ -35,6 +41,8 @@ struct settings {
         double filter_duration;
         char clone_name[UINPUT_MAX_NAME_SIZE];
         struct input_id clone_id;
+        uint64_t monitor_key_valuev[KEY_VALUEC];
+        uint64_t filter_key_valuev[KEY_VALUEC];
 };
 
 const char *settings_strerror(int settings_error);

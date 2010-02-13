@@ -25,17 +25,18 @@
 #include "settings.h"
 #include "util.h"
 
-#define SETTINGS_ERROR_COUNT 6
+#define SETTINGS_ERROR_COUNT 9
 static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "",
+        "unknown settings error",
         "dirty or empty filter duration file",
         "dirty or empty clone id bustype file",
         "dirty or empty clone id vendor file",
         "dirty or empty clone id product file",
         "dirty or empty clone id version file",
+        "dirty or empty monitor key file",
+        "dirty or empty filter key file",
 };
-
-#define SETTINGS_ERROR_UNKNOWN "unknown settings error"
 
 /* Returns
 
@@ -191,6 +192,68 @@ static int read_clone_id(struct input_id *clone_id)
         return 0;
 }
 
+static int read_monitor_keys(uint64_t *valuev)
+{
+        char *key_line = NULL;
+        size_t key_line_size;
+        int retval = -1;
+
+        if (readln(&key_line, &key_line_size,
+                   PATH_MONITOR_CAPABILITIES_KEY) == -1)
+                return -1;
+
+        switch (strtovaluev(valuev, KEY_VALUEC, key_line)) {
+        case 0:
+                break;
+        case -1:
+                goto out;
+        case -2:
+                retval = SETTINGS_ERROR_DIRTY_MONITOR_KEY;
+                goto out;
+        case -3:
+                retval = SETTINGS_ERROR_DIRTY_MONITOR_KEY;
+                goto out;
+        default:
+                retval = SETTINGS_ERROR_UNKNOWN;
+                goto out;
+        }
+        retval = 0;
+out:
+        free(key_line);
+        return retval;
+}
+
+static int read_filter_keys(uint64_t *valuev)
+{
+        char *key_line = NULL;
+        size_t key_line_size;
+        int retval = -1;
+
+        if (readln(&key_line, &key_line_size,
+                   PATH_FILTER_CAPABILITIES_KEY) == -1)
+                return -1;
+
+        switch (strtovaluev(valuev, KEY_VALUEC, key_line)) {
+        case 0:
+                break;
+        case -1:
+                goto out;
+        case -2:
+                retval = SETTINGS_ERROR_DIRTY_FILTER_KEY;
+                goto out;
+        case -3:
+                retval = SETTINGS_ERROR_DIRTY_FILTER_KEY;
+                goto out;
+        default:
+                retval = SETTINGS_ERROR_UNKNOWN;
+                goto out;
+        }
+        retval = 0;
+out:
+        free(key_line);
+        return retval;
+}
+
 int settings_read(struct settings *settings)
 {
         int retval;
@@ -208,6 +271,10 @@ int settings_read(struct settings *settings)
                 return retval;
         if ((retval = read_clone_id(&tmp_settings.clone_id)) != 0)
                 return retval;
+        if ((retval = read_monitor_keys(tmp_settings.monitor_key_valuev)) != 0)
+                return retval;
+        if ((retval = read_filter_keys(tmp_settings.filter_key_valuev)) != 0)
+                return retval;
 
         /* Safe to copy fresh settings because no error was detected.*/
         memcpy(settings, &tmp_settings, sizeof(struct settings));
@@ -216,11 +283,10 @@ int settings_read(struct settings *settings)
 
 const char *settings_strerror(int settings_error)
 {
-        if (SETTINGS_ERROR_NO_ERROR <= settings_error
-            && settings_error < SETTINGS_ERROR_COUNT) {
-                return SETTINGS_ERROR_STRS[settings_error];
-        }
-        return SETTINGS_ERROR_UNKNOWN;
+        if (settings_error < SETTINGS_ERROR_NO_ERROR
+            && settings_error >= SETTINGS_ERROR_COUNT)
+                settings_error = SETTINGS_ERROR_UNKNOWN;
+        return SETTINGS_ERROR_STRS[settings_error];
 }
 
 void settings_free(struct settings *settings)

@@ -29,6 +29,43 @@
 
 #include "util.h"
 
+/*
+  Returns:
+   0: success
+  -1: sycall failed
+  -2: conversion error
+  -3: line has more than len values
+ */
+int strtovaluev(uint64_t *valuev, size_t len, const char *line)
+{
+        const char *nptr = line;
+        char *endptr;
+        size_t valuec = 0;
+        int i;
+
+        do {
+                uint64_t value;
+                errno = 0;
+                value = strtoul(nptr, &endptr, 16);
+                if (value == 0 && endptr == nptr)
+                        return -2;
+                if (errno)
+                        return -1;
+                ++valuec;
+                nptr = endptr;
+        } while (*endptr != '\0');
+
+        if (valuec > len)
+                return -3;
+
+        nptr = line;
+        for (i = valuec - 1; i >= 0; --i) {
+                valuev[i] = strtoul(nptr, &endptr, 16);
+                nptr = endptr;
+        }
+        return 0;
+}
+
 static int open_matching(const char *path, const char *name)
 {
         int cmp_result = -2;
@@ -135,9 +172,9 @@ out:
         return retval;
 }
 
-int bit_test(int bit_i, const uint8_t *bytes)
+int bit_test(int bit_i, const uint64_t *bytes)
 {
-        return (bytes[bit_i / 8] & (1 << (bit_i % 8))) && 1;
+        return (bytes[bit_i / 64] & (1 << (bit_i % 64))) && 1;
 }
 
 double timestamp(const struct timeval *tv)
@@ -217,7 +254,7 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
         int orig_errno = 0;
         int clone_fd;
         int evtype;
-        uint8_t evdev_typebits[EV_MAX / 8 + 1];
+        uint64_t evdev_typebits[EV_MAX / 64 + 1];
         const char *uinput_devnode;
         int got_err = 1;
 
@@ -240,56 +277,56 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
 
         for (evtype = 0; evtype < EV_MAX; ++evtype) {
                 if (bit_test(evtype, evdev_typebits)) {
-                        int max_bits = 0;
+                        int max_bit = 0;
                         int io;
                         if (ioctl(clone_fd, UI_SET_EVBIT, evtype) == -1) {
                                 goto out;
                         }
                         switch (evtype) {
                         case EV_REL:
-                                max_bits = REL_MAX;
+                                max_bit = REL_MAX;
                                 io = UI_SET_RELBIT;
                                 break;
                         case EV_MSC:
-                                max_bits = MSC_MAX;
+                                max_bit = MSC_MAX;
                                 io = UI_SET_MSCBIT;
                                 break;
                         case EV_KEY:
-                                max_bits = KEY_MAX;
+                                max_bit = KEY_MAX;
                                 io = UI_SET_KEYBIT;
                                 break;
                         case EV_ABS:
-                                max_bits = ABS_MAX;
+                                max_bit = ABS_MAX;
                                 io = UI_SET_ABSBIT;
                                 break;
                         case EV_SW:
-                                max_bits = SW_MAX;
+                                max_bit = SW_MAX;
                                 io = UI_SET_SWBIT;
                                 break;
                         case EV_LED:
-                                max_bits = LED_MAX;
+                                max_bit = LED_MAX;
                                 io = UI_SET_LEDBIT;
                                 break;
                         case EV_SND:
-                                max_bits = SND_MAX;
+                                max_bit = SND_MAX;
                                 io = UI_SET_SNDBIT;
                                 break;
                         case EV_FF:
-                                max_bits = FF_MAX;
+                                max_bit = FF_MAX;
                                 io = UI_SET_FFBIT;
                                 break;				
                         default:
                                 break;
                         }
-                        if (max_bits) {
+                        if (max_bit) {
                                 int i;
-                                uint8_t evbits[max_bits / 8 + 1];
+                                uint64_t evbits[max_bit / 64 + 1];
                                 memset(&evbits, 0, sizeof(evbits));
-                                if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bits),
+                                if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bit),
                                           evbits) == -1) {
                                         goto out;
                                 }
-                                for (i = 0; i < max_bits; ++i) {
+                                for (i = 0; i < max_bit; ++i) {
                                         if (bit_test(i, evbits)
                                             && ioctl(clone_fd, io, i) == -1) {
                                                 goto out;

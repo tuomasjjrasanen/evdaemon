@@ -35,9 +35,9 @@ AX_DEFINE_DIR(
         [sysconfdir/evdaemon/filter/name],
         [Path to name file of the filter device.])
 AX_DEFINE_DIR(
-        [PATH_FILTER_CAPABILITIES_DIR],
-        [sysconfdir/evdaemon/filter/capabilities],
-        [Path to capabilities directory of the filter device.])
+        [PATH_FILTER_CAPABILITIES_KEY],
+        [sysconfdir/evdaemon/filter/capabilities/key],
+        [Path to key capabilities file of the filter device.])
 AX_DEFINE_DIR(
         [PATH_FILTER_DURATION],
         [sysconfdir/evdaemon/filter/duration],
@@ -47,9 +47,9 @@ AX_DEFINE_DIR(
         [sysconfdir/evdaemon/monitor/name],
         [Path to name file of the monitor device.])
 AX_DEFINE_DIR(
-        [PATH_MONITOR_CAPABILITIES_DIR],
-        [sysconfdir/evdaemon/monitor/capabilities],
-        [Path to capabilities directory of the monitor device.])
+        [PATH_MONITOR_CAPABILITIES_KEY],
+        [sysconfdir/evdaemon/monitor/capabilities/key],
+        [Path to key capabilities file of the monitor device.])
 AC_DEFINE_UNQUOTED(
         [PACKAGE_DESCRIPTION],
         ["$PACKAGE_DESCRIPTION"],

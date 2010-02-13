@@ -21,11 +21,13 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+int strtovaluev(uint64_t *valuev, size_t len, const char *line);
+
 int open_evdev_by_name(const char *name);
 
 int readln(char **buf, size_t *n, const char *path);
 
-int bit_test(int bit_i, const uint8_t *bytes);
+int bit_test(int bit_i, const uint64_t *bytes);
 
 double timestamp(const struct timeval *tv);
 
