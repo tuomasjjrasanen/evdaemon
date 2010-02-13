@@ -20,7 +20,7 @@ General information
 - **Author**: Tuomas Räsänen (tuos) <tuos@codegrove.org>
 - **Homepage**: http://codegrove.org/evdaemon/
 - **License**: GPLv3+ (see COPYING for details)
-- **Version**: 0.1.2
+- **Version**: 0.2
 
 Requirements
 ============
@@ -38,7 +38,7 @@ Requirements
 Downloading
 ===========
 
-- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.1.2.tar.gz
+- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.2.tar.gz
 - Tarballs of every release at: http://codegrove.org/evdaemon/releases/
 - Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
 
