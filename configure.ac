@@ -39,6 +39,10 @@ AX_DEFINE_DIR(
         [sysconfdir/evdaemon/filter/capabilities/key],
         [Path to key capabilities file of the filter device.])
 AX_DEFINE_DIR(
+        [PATH_FILTER_CAPABILITIES_REL],
+        [sysconfdir/evdaemon/filter/capabilities/rel],
+        [Path to rel capabilities file of the filter device.])
+AX_DEFINE_DIR(
         [PATH_FILTER_DURATION],
         [sysconfdir/evdaemon/filter/duration],
         [Path to duration file of the filter device.])

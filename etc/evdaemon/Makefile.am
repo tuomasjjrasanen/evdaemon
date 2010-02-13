@@ -8,7 +8,8 @@ dist_filterconf_DATA = filter/README   \
 
 capabilitiesfilterconfdir = $(filterconfdir)/capabilities
 dist_capabilitiesfilterconf_DATA = filter/capabilities/README \
-                                   filter/capabilities/key
+                                   filter/capabilities/key    \
+                                   filter/capabilities/rel
 
 monitorconfdir = $(confdir)/monitor
 dist_monitorconf_DATA = monitor/README \

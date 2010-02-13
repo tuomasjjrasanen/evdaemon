@@ -192,6 +192,9 @@ static int handle_filter(void)
                 if (event.type == EV_KEY
                     && bit_test(event.code, settings.filter_key_valuev))
                         return 0;
+                if (event.type == EV_REL
+                    && bit_test(event.code, settings.filter_rel_valuev))
+                        return 0;
         }
         if (write(clone_fd, &event, sizeof(struct input_event))
             != sizeof(struct input_event))

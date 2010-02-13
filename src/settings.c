@@ -25,7 +25,7 @@
 #include "settings.h"
 #include "util.h"
 
-#define SETTINGS_ERROR_COUNT 9
+#define SETTINGS_ERROR_COUNT 10
 static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "",
         "unknown settings error",
@@ -36,6 +36,7 @@ static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "dirty or empty clone id version file",
         "dirty or empty monitor key file",
         "dirty or empty filter key file",
+        "dirty or empty filter rel file",
 };
 
 /* Returns
@@ -254,6 +255,37 @@ out:
         return retval;
 }
 
+static int read_filter_rels(uint64_t *valuev)
+{
+        char *rel_line = NULL;
+        size_t rel_line_size;
+        int retval = -1;
+
+        if (readln(&rel_line, &rel_line_size,
+                   PATH_FILTER_CAPABILITIES_REL) == -1)
+                return -1;
+
+        switch (strtovaluev(valuev, REL_VALUEC, rel_line)) {
+        case 0:
+                break;
+        case -1:
+                goto out;
+        case -2:
+                retval = SETTINGS_ERROR_DIRTY_FILTER_REL;
+                goto out;
+        case -3:
+                retval = SETTINGS_ERROR_DIRTY_FILTER_REL;
+                goto out;
+        default:
+                retval = SETTINGS_ERROR_UNKNOWN;
+                goto out;
+        }
+        retval = 0;
+out:
+        free(rel_line);
+        return retval;
+}
+
 int settings_read(struct settings *settings)
 {
         int retval;
@@ -262,23 +294,28 @@ int settings_read(struct settings *settings)
         memset(&tmp_settings, 0, sizeof(struct settings));
 
         if ((retval = read_filter_duration(&tmp_settings)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_filter_name(&tmp_settings)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_monitor_name(&tmp_settings)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_clone_name(&tmp_settings)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_clone_id(&tmp_settings.clone_id)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_monitor_keys(tmp_settings.monitor_key_valuev)) != 0)
-                return retval;
+                goto err;
         if ((retval = read_filter_keys(tmp_settings.filter_key_valuev)) != 0)
-                return retval;
+                goto err;
+        if ((retval = read_filter_rels(tmp_settings.filter_rel_valuev)) != 0)
+                goto err;
 
         /* Safe to copy fresh settings because no error was detected.*/
         memcpy(settings, &tmp_settings, sizeof(struct settings));
         return 0;
+err:
+        settings_free(&tmp_settings);
+        return retval;
 }
 
 const char *settings_strerror(int settings_error)
