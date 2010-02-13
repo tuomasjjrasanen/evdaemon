@@ -172,9 +172,14 @@ out:
         return retval;
 }
 
-int bit_test(int bit_i, const uint64_t *bytes)
+int bit_test64(int bit_i, const uint64_t *bytes)
 {
         return (bytes[bit_i / 64] & (1 << (bit_i % 64))) && 1;
+}
+
+int bit_test8(int bit_i, const uint8_t *bytes)
+{
+        return (bytes[bit_i / 8] & (1 << (bit_i % 8))) && 1;
 }
 
 double timestamp(const struct timeval *tv)
@@ -254,7 +259,7 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
         int orig_errno = 0;
         int clone_fd;
         int evtype;
-        uint64_t evdev_typebits[EV_MAX / 64 + 1];
+        uint8_t evdev_typebits[EV_MAX / 8 + 1];
         const char *uinput_devnode;
         int got_err = 1;
 
@@ -263,7 +268,7 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
         if (ioctl(evdev_fd, EVIOCGID, &id) == -1)
                 return -1;
 
-        if (ioctl(evdev_fd, EVIOCGBIT(0, EV_MAX), evdev_typebits) < 0)
+        if (ioctl(evdev_fd, EVIOCGBIT(0, sizeof(evdev_typebits)), evdev_typebits) < 0)
                 return -1;
 
         if ((uinput_devnode = get_uinput_devnode()) == NULL)
@@ -276,7 +281,7 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
            goto out instead of plain return.*/
 
         for (evtype = 0; evtype < EV_MAX; ++evtype) {
-                if (bit_test(evtype, evdev_typebits)) {
+                if (bit_test8(evtype, evdev_typebits)) {
                         int max_bit = 0;
                         int io;
                         if (ioctl(clone_fd, UI_SET_EVBIT, evtype) == -1) {
@@ -320,14 +325,14 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
                         }
                         if (max_bit) {
                                 int i;
-                                uint64_t evbits[max_bit / 64 + 1];
+                                uint8_t evbits[max_bit / 8 + 1];
                                 memset(&evbits, 0, sizeof(evbits));
-                                if (ioctl(evdev_fd, EVIOCGBIT(evtype, max_bit),
+                                if (ioctl(evdev_fd, EVIOCGBIT(evtype, sizeof(evbits)),
                                           evbits) == -1) {
                                         goto out;
                                 }
                                 for (i = 0; i < max_bit; ++i) {
-                                        if (bit_test(i, evbits)
+                                        if (bit_test8(i, evbits)
                                             && ioctl(clone_fd, io, i) == -1) {
                                                 goto out;
                                         }

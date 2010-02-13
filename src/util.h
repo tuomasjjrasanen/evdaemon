@@ -27,7 +27,9 @@ int open_evdev_by_name(const char *name);
 
 int readln(char **buf, size_t *n, const char *path);
 
-int bit_test(int bit_i, const uint64_t *bytes);
+int bit_test64(int bit_i, const uint64_t *bytes);
+
+int bit_test8(int bit_i, const uint8_t *bytes);
 
 double timestamp(const struct timeval *tv);
 

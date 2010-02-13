@@ -190,10 +190,10 @@ static int handle_filter(void)
 
         if (is_filtering) {
                 if (event.type == EV_KEY
-                    && bit_test(event.code, settings.filter_key_valuev))
+                    && bit_test64(event.code, settings.filter_key_valuev))
                         return 0;
                 if (event.type == EV_REL
-                    && bit_test(event.code, settings.filter_rel_valuev))
+                    && bit_test64(event.code, settings.filter_rel_valuev))
                         return 0;
         }
         if (write(clone_fd, &event, sizeof(struct input_event))
@@ -215,7 +215,7 @@ static int handle_monitor(void)
                 return 0;
         }
 
-        if (!bit_test(event.code, settings.monitor_key_valuev))
+        if (!bit_test64(event.code, settings.monitor_key_valuev))
                 return 0;
 
         if (gettimeofday(&last_monitor_tv, NULL) == -1) {
