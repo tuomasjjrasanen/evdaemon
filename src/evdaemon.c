@@ -105,7 +105,7 @@ void parse_args(int argc, char **argv)
                         help_and_exit();
                 default:
                         errx(EXIT_FAILURE, "argument parsing failed");
-                }		
+                }
         }
 
         if (optind != argc) {
@@ -147,7 +147,7 @@ static int daemonize(void)
         default:
                 exit(0);
         }
-	
+
         umask(0);
 
         if (chdir("/") == -1)
@@ -156,7 +156,7 @@ static int daemonize(void)
         for (i = 0; i < 3; ++i)
                 if (close(i) == -1 && !daemon_errno)
                         daemon_errno = errno;
-        
+
         fd = open("/dev/null", O_RDWR);
         if (fd == -1 && !daemon_errno) {
                 daemon_errno = errno;
@@ -166,7 +166,7 @@ static int daemonize(void)
                 if (dup(fd) == -1 && !daemon_errno)
                         daemon_errno = errno;
         }
-     
+
         return daemon_errno ? -1 : 0;
 }
 
@@ -232,20 +232,12 @@ int main(int argc, char **argv)
         struct sigaction sigact;
         sigset_t         select_sigset;
         int              exitval = EXIT_FAILURE;
-        int              syslog_options = LOG_ODELAY;
+        int              syslog_options = LOG_ODELAY | LOG_PERROR;
         int              settings_retval;
 
         parse_args(argc, argv);
 
-        if (!is_daemon)
-                syslog_options |= LOG_PERROR; /* Log also to stderr. */
-
         openlog(program_invocation_short_name, syslog_options, LOG_DAEMON);
-
-        if (is_daemon && daemonize() == -1) {
-                syslog(LOG_ERR, "daemonize: %s", strerror(errno));
-                goto out;
-        }
 
         syslog(LOG_INFO, "starting");
 
@@ -281,7 +273,7 @@ int main(int argc, char **argv)
                 syslog(LOG_ERR, "sigaddset SIGINT: %s", strerror(errno));
                 goto out;
         }
-        
+
         settings_retval = settings_read(&settings);
         switch (settings_retval) {
         case 0:
@@ -317,7 +309,12 @@ int main(int argc, char **argv)
                 syslog(LOG_ERR, "clone_evdev: %s", strerror(errno));
                 goto out;
         }
-	
+
+        if (is_daemon && daemonize() == -1) {
+                syslog(LOG_ERR, "daemonize: %s", strerror(errno));
+                goto out;
+        }
+
         syslog(LOG_INFO, "started");
 
         while (is_running) {
@@ -359,7 +356,7 @@ out:
                         syslog(LOG_ERR, "destroy clone: %s", strerror(errno));
                         exitval = EXIT_FAILURE;
                 }
-        
+
                 if (close(clone_fd) == -1) {
                         syslog(LOG_ERR, "close clone: %s", strerror(errno));
                         exitval = EXIT_FAILURE;
