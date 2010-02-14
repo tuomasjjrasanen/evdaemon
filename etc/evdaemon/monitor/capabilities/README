@@ -1,0 +1,6 @@
+Only the very first line of every file in this directory is considered by
+evdaemon.
+
+key - Bit values of keys evdaemon should monitor. Defined using the same syntax
+      as keys displayed in /proc/bus/input/devices, i.e. at most 16 hex values
+      per block, at most 12 blocks, most significant bit first.

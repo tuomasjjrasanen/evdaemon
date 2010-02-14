@@ -1,0 +1,5 @@
+Please refer each individual README file in following configuration directories:
+
+clone/   - Configuration of the event device evdaemon creates
+filter/  - Configuration of the event device evdaemon filters
+monitor/ - Configuration of the event device evdaemon monitors

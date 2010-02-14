@@ -1,0 +1,7 @@
+Only the very first line of every file in this directory is considered by
+evdaemon.
+
+bustype - Any of the values prefixed with BUS_ in /usr/include/linux/input.h
+vendor  - Any value from range 0 - 65535
+product - Any value from range 0 - 65535
+version - Any value from range 0 - 65535
