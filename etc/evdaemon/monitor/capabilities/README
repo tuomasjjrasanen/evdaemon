@@ -4,3 +4,7 @@ evdaemon.
 key - Bit values of keys evdaemon should monitor. Defined using the same syntax
       as keys displayed in /proc/bus/input/devices, i.e. at most 16 hex values
       per block, at most 12 blocks, most significant bit first.
+rel - Bit values of relative axis evdaemon should monitor. Defined
+      using the same syntax as relative axis displayed in
+      /proc/bus/input/devices, i.e. at most 16 hex values per block, at most
+      12 blocks, most significant bit first.

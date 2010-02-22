@@ -17,7 +17,8 @@ dist_monitorconf_DATA = monitor/README \
 
 capabilitiesmonitorconfdir = $(monitorconfdir)/capabilities
 dist_capabilitiesmonitorconf_DATA = monitor/capabilities/README \
-                                    monitor/capabilities/key
+                                    monitor/capabilities/key    \
+                                    monitor/capabilities/rel
 
 cloneconfdir = $(confdir)/clone
 dist_cloneconf_DATA = clone/README \
