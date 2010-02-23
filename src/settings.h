@@ -29,8 +29,9 @@
 #define SETTINGS_ERROR_CLONE_ID_PRODUCT  5
 #define SETTINGS_ERROR_CLONE_ID_VERSION  6
 #define SETTINGS_ERROR_DIRTY_MONITOR_KEY 7
-#define SETTINGS_ERROR_DIRTY_FILTER_KEY  8
-#define SETTINGS_ERROR_DIRTY_FILTER_REL  9
+#define SETTINGS_ERROR_DIRTY_MONITOR_REL 8
+#define SETTINGS_ERROR_DIRTY_FILTER_KEY  9
+#define SETTINGS_ERROR_DIRTY_FILTER_REL  10
 
 #define KEY_VALUEC (KEY_MAX / 64 + 1)
 #define REL_VALUEC (REL_MAX / 64 + 1)
@@ -44,6 +45,7 @@ struct settings {
         char clone_name[UINPUT_MAX_NAME_SIZE];
         struct input_id clone_id;
         uint64_t monitor_key_valuev[KEY_VALUEC];
+        uint64_t monitor_rel_valuev[KEY_VALUEC];
         uint64_t filter_key_valuev[KEY_VALUEC];
         uint64_t filter_rel_valuev[REL_VALUEC];
 };

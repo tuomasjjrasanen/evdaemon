@@ -25,7 +25,7 @@
 #include "settings.h"
 #include "util.h"
 
-#define SETTINGS_ERROR_COUNT 10
+#define SETTINGS_ERROR_COUNT 11
 static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "",
         "unknown settings error",
@@ -35,6 +35,7 @@ static const char *SETTINGS_ERROR_STRS[SETTINGS_ERROR_COUNT] = {
         "dirty or empty clone id product file",
         "dirty or empty clone id version file",
         "dirty or empty monitor key file",
+        "dirty or empty monitor rel file",
         "dirty or empty filter key file",
         "dirty or empty filter rel file",
 };
@@ -224,6 +225,37 @@ out:
         return retval;
 }
 
+static int read_monitor_rels(uint64_t *valuev)
+{
+        char *rel_line = NULL;
+        size_t rel_line_size;
+        int retval = -1;
+
+        if (readln(&rel_line, &rel_line_size,
+                   PATH_MONITOR_CAPABILITIES_REL) == -1)
+                return -1;
+
+        switch (strtovaluev(valuev, REL_VALUEC, rel_line)) {
+        case 0:
+                break;
+        case -1:
+                goto out;
+        case -2:
+                retval = SETTINGS_ERROR_DIRTY_MONITOR_REL;
+                goto out;
+        case -3:
+                retval = SETTINGS_ERROR_DIRTY_MONITOR_REL;
+                goto out;
+        default:
+                retval = SETTINGS_ERROR_UNKNOWN;
+                goto out;
+        }
+        retval = 0;
+out:
+        free(rel_line);
+        return retval;
+}
+
 static int read_filter_keys(uint64_t *valuev)
 {
         char *key_line = NULL;
@@ -304,6 +336,8 @@ int settings_read(struct settings *settings)
         if ((retval = read_clone_id(&tmp_settings.clone_id)) != 0)
                 goto err;
         if ((retval = read_monitor_keys(tmp_settings.monitor_key_valuev)) != 0)
+                goto err;
+        if ((retval = read_monitor_rels(tmp_settings.monitor_rel_valuev)) != 0)
                 goto err;
         if ((retval = read_filter_keys(tmp_settings.filter_key_valuev)) != 0)
                 goto err;

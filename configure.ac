@@ -54,6 +54,10 @@ AX_DEFINE_DIR(
         [PATH_MONITOR_CAPABILITIES_KEY],
         [sysconfdir/evdaemon/monitor/capabilities/key],
         [Path to key capabilities file of the monitor device.])
+AX_DEFINE_DIR(
+        [PATH_MONITOR_CAPABILITIES_REL],
+        [sysconfdir/evdaemon/monitor/capabilities/rel],
+        [Path to rel capabilities file of the monitor device.])
 AC_DEFINE_UNQUOTED(
         [PACKAGE_DESCRIPTION],
         ["$PACKAGE_DESCRIPTION"],

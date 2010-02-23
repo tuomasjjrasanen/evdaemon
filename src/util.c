@@ -172,9 +172,9 @@ out:
         return retval;
 }
 
-int bit_test64(int bit_i, const uint64_t *bytes)
+int bit_test64(int bit_i, const uint64_t *bitarray)
 {
-        return (bytes[bit_i / 64] & ((uint64_t)1 << (bit_i % 64))) && 1;
+        return (bitarray[bit_i / 64] & ((uint64_t)1 << (bit_i % 64))) && 1;
 }
 
 int bit_test8(int bit_i, const uint8_t *bytes)
@@ -268,7 +268,8 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
         if (ioctl(evdev_fd, EVIOCGID, &id) == -1)
                 return -1;
 
-        if (ioctl(evdev_fd, EVIOCGBIT(0, sizeof(evdev_typebits)), evdev_typebits) < 0)
+        if (ioctl(evdev_fd, EVIOCGBIT(0, sizeof(evdev_typebits)),
+                  evdev_typebits) < 0)
                 return -1;
 
         if ((uinput_devnode = get_uinput_devnode()) == NULL)
@@ -327,7 +328,8 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
                                 int i;
                                 uint8_t evbits[max_bit / 8 + 1];
                                 memset(&evbits, 0, sizeof(evbits));
-                                if (ioctl(evdev_fd, EVIOCGBIT(evtype, sizeof(evbits)),
+                                if (ioctl(evdev_fd,
+                                          EVIOCGBIT(evtype, sizeof(evbits)),
                                           evbits) == -1) {
                                         goto out;
                                 }

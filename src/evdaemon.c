@@ -190,11 +190,13 @@ static int handle_filter(void)
 
         if (is_filtering) {
                 if (event.type == EV_KEY
-                    && bit_test64(event.code, settings.filter_key_valuev))
+                    && bit_test64(event.code, settings.filter_key_valuev)) {
                         return 0;
+                }
                 if (event.type == EV_REL
-                    && bit_test64(event.code, settings.filter_rel_valuev))
+                    && bit_test64(event.code, settings.filter_rel_valuev)) {
                         return 0;
+                }
         }
         if (write(clone_fd, &event, sizeof(struct input_event))
             != sizeof(struct input_event))
@@ -211,12 +213,17 @@ static int handle_monitor(void)
                 return -1;
         }
 
-        if (event.type != EV_KEY) {
+        if (event.type == EV_KEY) {
+                if (!bit_test64(event.code, settings.monitor_key_valuev)) {
+                        return 0;
+                }
+        } else if (event.type == EV_REL) {
+                if (!bit_test64(event.code, settings.monitor_rel_valuev)) {
+                        return 0;
+                }
+        } else {
                 return 0;
         }
-
-        if (!bit_test64(event.code, settings.monitor_key_valuev))
-                return 0;
 
         if (gettimeofday(&last_monitor_tv, NULL) == -1) {
                 syslog(LOG_ERR, "gettimeofday: %s", strerror(errno));

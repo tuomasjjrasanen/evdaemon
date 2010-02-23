@@ -40,7 +40,7 @@ Runtime requirements
 - Add uinput to the modules automatically loaded on boot if it's not already
   there::
 
-    echo uinput >> /etc/modules
+    grep -q uinput /etc/modules || echo uinput >> /etc/modules
 
 Build requirements
 ==================
