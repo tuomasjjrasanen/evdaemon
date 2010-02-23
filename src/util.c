@@ -153,7 +153,7 @@ int readln(char **buf, size_t *n, const char *path)
         ssize_t chars;
         int orig_errno;
         int retval = -1;
-        
+
         if ((file = fopen(path, "r")) == NULL)
                 return -1;
 
@@ -190,21 +190,21 @@ double timestamp(const struct timeval *tv)
 const char *get_devroot_path()
 {
         static char dev_path[_POSIX_PATH_MAX + 1];
-        struct udev *udev; 
+        struct udev *udev;
         const char *path;
         const char *retval = NULL;
         int orig_errno;
 
         if ((udev = udev_new()) == NULL)
                 return NULL;
-        
+
         if ((path = udev_get_dev_path(udev)) == NULL)
                 goto out;
 
         if (strlen(path) > _POSIX_PATH_MAX) {
                 errno = ENAMETOOLONG;
                 goto out;
-        }        
+        }
 
         strncpy(dev_path, path, _POSIX_PATH_MAX);
         retval = dev_path;
@@ -319,7 +319,7 @@ int clone_evdev(int evdev_fd, const struct input_id *clone_id,
                         case EV_FF:
                                 max_bit = FF_MAX;
                                 io = UI_SET_FFBIT;
-                                break;				
+                                break;
                         default:
                                 break;
                         }
