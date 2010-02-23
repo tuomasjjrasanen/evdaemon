@@ -54,7 +54,7 @@ static int read_filter_duration(struct settings *settings)
         char *strtod_endptr = NULL;
         double duration;
         int retval = -1;
-    
+
         if (readln(&filter_duration_line, &filter_duration_line_size,
                    PATH_FILTER_DURATION) == -1)
                 return -1;
@@ -130,7 +130,7 @@ static int read_clone_id_member(uint16_t *valuep, const char *path,
         char *strtoul_endptr = NULL;
         unsigned long int value;
         int retval = -1;
-    
+
         if (readln(&line, &line_size, path) == -1)
                 return -1;
 
