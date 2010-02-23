@@ -174,7 +174,7 @@ out:
 
 int bit_test64(int bit_i, const uint64_t *bytes)
 {
-        return (bytes[bit_i / 64] & (1 << (bit_i % 64))) && 1;
+        return (bytes[bit_i / 64] & ((uint64_t)1 << (bit_i % 64))) && 1;
 }
 
 int bit_test8(int bit_i, const uint8_t *bytes)
