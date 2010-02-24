@@ -57,6 +57,7 @@ void parse_args(int argc, char **argv)
 {
         const struct option options[] = {
                 {"daemon", no_argument, NULL, 'd'},
+                {"config-dir", no_argument, NULL, 'c'},
                 {"version", no_argument, NULL, 'V'},
                 {"help", no_argument, NULL, 'h'},
                 {0, 0, 0, 0}
@@ -74,6 +75,9 @@ void parse_args(int argc, char **argv)
                 case 'd':
                         is_daemon = 1;
                         break;
+                case 'c':
+                        printf("%s\n", PATH_CONFIG_DIR);
+                        exit(EXIT_SUCCESS);
                 case 'V':
                         printf("%s %s\n"
                                "Copyright © 2010 %s\n"
@@ -88,6 +92,7 @@ void parse_args(int argc, char **argv)
                                "\n"
                                "Options:\n"
                                "     --daemon               run as a daemon process\n"
+                               "     --config-dir           output path to configuration directory and exit\n"
                                " -h, --help                 display this help and exit\n"
                                " -V, --version              output version infromation and exit\n"
                                "\n"

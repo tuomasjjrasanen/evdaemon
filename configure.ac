@@ -11,6 +11,10 @@ AC_PROG_CC
 PACKAGE_AUTHOR=$(cat AUTHORS | head -n1)
 PACKAGE_DESCRIPTION="Monitor Linux event devices and modify their behavior."
 AX_DEFINE_DIR(
+        [PATH_CONFIG_DIR],
+        [sysconfdir/evdaemon],
+        [Path to configuration directory.])
+AX_DEFINE_DIR(
         [PATH_CLONE_NAME],
         [sysconfdir/evdaemon/clone/name],
         [Path to name file of the clone devie.])
