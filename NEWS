@@ -1,0 +1,4 @@
+0.3
+ * New command line option: --config-dir outputs configuration directory path.
+   - Support for evdaemon-admin tools <http://codegrove.org/evdaemon-admin/>.
+ * Support for monitoring relative axis events.

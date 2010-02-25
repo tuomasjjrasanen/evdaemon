@@ -92,7 +92,7 @@ void parse_args(int argc, char **argv)
                                "\n"
                                "Options:\n"
                                "     --daemon               run as a daemon process\n"
-                               "     --config-dir           output path to configuration directory and exit\n"
+                               "     --config-dir           output configuration directory path and exit\n"
                                " -h, --help                 display this help and exit\n"
                                " -V, --version              output version infromation and exit\n"
                                "\n"

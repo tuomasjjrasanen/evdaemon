@@ -1,6 +1,6 @@
-===================================================================
- evdaemon - Monitor Linux event devices and modify their behavior.
-===================================================================
+==================================================================
+ evdaemon - Monitor Linux event devices and modify their behavior
+==================================================================
 
 .. contents::
 
@@ -18,8 +18,9 @@ syndaemon in laptops having touchpads not recognized as Synaptics
 touchpads.  In addition, unlike syndaemon, evdaemon does not limit
 it's filtering capabilities to just pointer motion or keyboard
 events. All filtered and monitored events can be defined
-individually. Furthermore, evdaemon does not depend on `X Window System
-<http://www.x.org/wiki/>`_.
+individually. And because event devices are not `X Window System
+<http://www.x.org/wiki/>`_ specific things, why should the controlling
+daemon depend on X?
 
 General information
 ===================
@@ -27,7 +28,7 @@ General information
 - **Author**: Tuomas Räsänen (tuos) <tuos@codegrove.org>
 - **Homepage**: http://codegrove.org/evdaemon/
 - **License**: GPLv3+ (see COPYING for details)
-- **Version**: 0.2
+- **Version**: 0.3
 
 Runtime requirements
 ====================
@@ -37,7 +38,7 @@ Runtime requirements
 
     modprobe -i uinput
 
-- Add uinput to the modules automatically loaded on boot if it's not already
+- Add uinput to the modules automatically loaded on boot if it is not already
   there::
 
     grep -q uinput /etc/modules || echo uinput >> /etc/modules
@@ -50,7 +51,8 @@ Build requirements
 Downloading
 ===========
 
-- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.2.tar.gz
+- Ubuntu package: https://launchpad.net/~tuos/+archive/codegrove
+- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.3.tar.gz
 - Tarballs of every release at: http://codegrove.org/evdaemon/releases/
 - Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
 
@@ -74,12 +76,14 @@ The install-procedure adheres the "standard"::
   ./configure
   make && make install
 
-Configuration
-=============
+Configuration & Run
+===================
 
-The runtime configuration of the evdaemon can changed by editing files in
-``$sysconfdir/evdaemon`` directory and it's subdirectories. Refer to README
-file in each directory.
+The runtime configuration of the evdaemon can changed by editing files
+in ``$sysconfdir/evdaemon`` directory and it's subdirectories. Refer
+to README file in each directory. There is also `evdaemon-admin
+<http://codegrove.org/evdaemon-admin/>`_ project wich provides tools
+for configuring and controlling evdaemon easily.
 
 Run evdaemon as a daemon process::
 
