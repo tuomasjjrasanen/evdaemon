@@ -28,7 +28,7 @@ General information
 - **Author**: Tuomas Räsänen (tuos) <tuos@codegrove.org>
 - **Homepage**: http://codegrove.org/evdaemon/
 - **License**: GPLv3+ (see COPYING for details)
-- **Version**: 0.3
+- **Version**: 0.3.1
 
 Runtime requirements
 ====================
@@ -52,7 +52,7 @@ Downloading
 ===========
 
 - Ubuntu package: https://launchpad.net/~tuos/+archive/codegrove
-- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.3.tar.gz
+- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.3.1.tar.gz
 - Tarballs of every release at: http://codegrove.org/evdaemon/releases/
 - Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
 

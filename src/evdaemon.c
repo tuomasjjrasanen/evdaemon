@@ -195,7 +195,8 @@ static int handle_filter(void)
 
         if (is_filtering) {
                 if (event.type == EV_KEY
-                    && bit_test64(event.code, settings.filter_key_valuev)) {
+                    && bit_test64(event.code, settings.filter_key_valuev)
+                    && event.value == 1) {
                         return 0;
                 }
                 if (event.type == EV_REL
