@@ -46,7 +46,7 @@ int strtovaluev(uint64_t *valuev, size_t len, const char *line)
         do {
                 uint64_t value;
                 errno = 0;
-                value = strtoul(nptr, &endptr, 16);
+                value = strtoull(nptr, &endptr, 16);
                 if (value == 0 && endptr == nptr)
                         return -2;
                 if (errno)
@@ -60,7 +60,7 @@ int strtovaluev(uint64_t *valuev, size_t len, const char *line)
 
         nptr = line;
         for (i = valuec - 1; i >= 0; --i) {
-                valuev[i] = strtoul(nptr, &endptr, 16);
+                valuev[i] = strtoull(nptr, &endptr, 16);
                 nptr = endptr;
         }
         return 0;
