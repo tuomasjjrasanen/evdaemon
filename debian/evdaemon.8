@@ -1,0 +1,66 @@
+.TH evdaemon "8" "evdaemon" "System administration commands"
+.SH NAME
+evdaemon \- monitor Linux event devices and modify their behavior
+.SH SYNOPSIS
+.B evdaemon
+[\fIOPTION]...\fR
+.SH DESCRIPTION
+The Code Grove evdaemon program is syndaemon on steroids. It is to
+Linux generic event devices what syndaemon is for just keyboards and
+touchpads. It allows to monitor any event device and change other
+event device's behavior accordingly.
+.SH CONFIGURATION
+The evdaemon is started by Upstart process management daemon and
+run as a daemon job. All run options are therefore defined in the job
+configuration file /etc/init/evdaemon.conf.
+
+The behavior can be configured by editing configuration files in /etc/evdaemon
+and it's subdirectories. Refer to README file in each directory.
+.SH OPTIONS
+.TP
+\fB\-\-daemon\fR
+Run evdaemon as a daemon process.
+Processing information and error messages are printed only into syslog.
+Without this option, logs are also printed into stderr.
+.TP
+\fB\-\-config\-dir\fR
+Print out configuration directory path and exit.
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Print text describing all the command line options instead of
+preprocessing anything.
+.TP
+\fB\-V\fR \fB\-\-version\fR
+Print out version information and exit.
+.SH FILES
+.IP /etc/init/evdaemon.conf
+.IP /etc/evdaemon/clone/name
+.IP /etc/evdaemon/clone/id/bustype
+.IP /etc/evdaemon/clone/id/vendor
+.IP /etc/evdaemon/clone/id/product
+.IP /etc/evdaemon/clone/id/version
+.IP /etc/evdaemon/filter/name
+.IP /etc/evdaemon/filter/duration
+.IP /etc/evdaemon/filter/capabilities/key
+.IP /etc/evdaemon/filter/capabilities/rel
+.IP /etc/evdaemon/monitor/name
+.IP /etc/evdaemon/monitor/capabilities/key
+.IP /etc/evdaemon/monitor/capabilities/rel
+.SH AUTHOR
+Tuomas Räsänen (tuos) <tuos@codegrove.org>
+.SH BUGS
+Report evdaemon bugs to <tuos@codegrove.org>
+.SH COPYRIGHT
+Copyright © 2010 Tuomas Räsänen
+.SH LICENSE
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+.BR modules(5)
+.BR init(5)
+.BR init(8)
+.BR initctl(8)
+.BR udevadm(8)
+.PP
+Home page: <http://codegrove.org/evdaemon/>

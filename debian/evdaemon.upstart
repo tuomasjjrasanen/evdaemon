@@ -1,0 +1,13 @@
+description "Monitor Linux event devices and modify their behavior."
+author "Tuomas Räsänen (tuos) <tuos@codegrove.org>"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+expect daemon
+respawn
+
+umask 0
+kill timeout 5
+
+exec evdaemon --daemon
