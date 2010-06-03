@@ -1,3 +1,9 @@
+evdaemon (0.3.3-0ubuntu2) lucid; urgency=low
+
+  * Made future-proof: removed -Werror.
+
+ -- Tuomas Räsänen (tuos) <tuos@codegrove.org>  Thu, 03 Jun 2010 12:30:52 +0300
+
 evdaemon (0.3.2-0ubuntu1) lucid; urgency=low
 
   * New upstream bug fix release.

@@ -1,6 +1,6 @@
 AC_INIT(
         [evdaemon],
-        [0.3.2],
+        [0.3.3],
         [tuos@codegrove.org],
         [evdaemon],
         [http://codegrove.org/evdaemon/])
