@@ -76,7 +76,6 @@ then
 fi
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
-        README
         Makefile
         src/Makefile
         etc/Makefile
