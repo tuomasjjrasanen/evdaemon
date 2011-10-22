@@ -1,0 +1,9 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Type=Application
+Exec=evdaemon-admin-gtk
+Name=evdaemon-admin
+Icon=evdaemon-admin
+Terminal=false
+Categories=GTK;Settings;FileTools;

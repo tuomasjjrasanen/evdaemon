@@ -1,0 +1,3 @@
+include share/applications/evdaemon-admin.desktop
+include share/pixmaps/evdaemon-admin.xpm
+include src/bin/evdaemon-admin-gtk.xml

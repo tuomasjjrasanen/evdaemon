@@ -1,0 +1,378 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+
+import functools
+import os.path
+import subprocess
+import sys
+
+import gtk
+
+import evdaemon.bustype
+import evdaemon.capabilities
+import evdaemon.config
+import evdaemon.inputbus
+
+_MODULE_DIRPATH = os.path.dirname(__file__)
+_BUILDER_XML_FILEPATH = os.path.join(_MODULE_DIRPATH, "evdaemon-admin-gtk.xml")
+
+class EvdaemonAdmin(object):
+
+    def load(self):
+        activation_functions = []
+        for device_role in ("filter", "monitor"):
+            combobox_name = "combobox_%s_name" % device_role
+            combobox = self.builder.get_object(combobox_name)
+            liststore = combobox.get_model()
+            device_name = evdaemon.config.read_name(device_role)
+            configured_device_exists = False
+            for row in liststore:
+                if row[0] == device_name:
+                    configured_device_exists = True
+                    break
+
+            if not configured_device_exists:
+                raise RuntimeError("Device does not exist: %s: %r" %
+                                   (device_role.capitalize(), device_name))
+
+            # We store these combobox row activator functions for later use
+            # because we want to call them only if both of the names are
+            # correct.
+            fn = functools.partial(combobox.set_active_iter, row.iter)
+            activation_functions.append(fn)
+
+        # Names for both critical devices roles are correct:
+        # we can activate the right row of the comboboxes.
+        for fn in activation_functions:
+            fn()
+
+        # Lose focus, because some text might be selected and
+        # therefore setting text for that widget might fail.
+        self.window.set_focus(None)
+
+        entry = self.builder.get_object("entry_clone_name")
+        entry.set_text(evdaemon.config.read_name("clone"))
+
+        adjustment_filter_duration = self.builder.get_object(
+            "adjustment_filter_duration")
+        adjustment_filter_duration.set_value(
+            evdaemon.config.read_filter_duration())
+
+        combobox_clone_bustype = self.builder.get_object(
+            "combobox_clone_bustype")
+        liststore_clone_bustype = combobox_clone_bustype.get_model()
+        clone_bustype = evdaemon.config.read_clone_id("bustype")
+        for row in liststore_clone_bustype:
+            if row[1] == clone_bustype:
+                combobox_clone_bustype.set_active_iter(row.iter)
+
+        for id_name in ("vendor", "product", "version"):
+            adjustment_name = "adjustment_clone_%s" % id_name
+            adjustment = self.builder.get_object(adjustment_name)
+            adjustment.set_value(evdaemon.config.read_clone_id(id_name))
+
+        for device_role in ("filter", "monitor"):
+            for capability in evdaemon.capabilities.NAMES.keys():
+                treeview_name = "treeview_%s_%s" % (device_role, capability)
+                treeview = self.builder.get_object(treeview_name)
+                liststore = treeview.get_model()
+                value = evdaemon.config.read_capability_bits(device_role,
+                                                             capability)
+                for row in liststore:
+                    if (1 << row[2]) & value:
+                        row[1] = True
+
+        statusbar = self.builder.get_object("statusbar")
+        load_context_id = statusbar.get_context_id("load")
+        statusbar.push(load_context_id, "Configuration loaded.")
+
+    def save(self):
+        self.window.set_focus(None)
+
+        for device_role in ("filter", "monitor"):
+            combobox_name = "combobox_%s_name" % device_role
+            combobox = self.builder.get_object(combobox_name)
+            evdaemon.config.write_name(combobox.get_active_text(), device_role)
+
+        entry = self.builder.get_object("entry_clone_name")
+        evdaemon.config.write_name(entry.get_text(), "clone")
+
+        adjustment_filter_duration = self.builder.get_object(
+            "adjustment_filter_duration")
+        evdaemon.config.write_filter_duration(
+            adjustment_filter_duration.get_value())
+
+        combobox_clone_bustype = self.builder.get_object(
+            "combobox_clone_bustype")
+        active_index = combobox_clone_bustype.get_active()
+        liststore_clone_bustype = combobox_clone_bustype.get_model()
+        bustype_value = liststore_clone_bustype[active_index][1]
+        evdaemon.config.write_clone_id(bustype_value, "bustype")
+
+        for id_name in ("vendor", "product", "version"):
+            adjustment_name = "adjustment_clone_%s" % id_name
+            adjustment = self.builder.get_object(adjustment_name)
+            evdaemon.config.write_clone_id(adjustment.get_value(), id_name)
+
+        for device_role in ("filter", "monitor"):
+            for capability in evdaemon.capabilities.NAMES.keys():
+                treeview_name = "treeview_%s_%s" % (device_role, capability)
+                treeview = self.builder.get_object(treeview_name)
+                liststore = treeview.get_model()
+                value = sum([1 << row[2] for row in liststore if row[1]])
+                evdaemon.config.write_capability_bits(value, device_role,
+                                                      capability)
+
+        statusbar = self.builder.get_object("statusbar")
+        save_context_id = statusbar.get_context_id("save")
+        statusbar.push(save_context_id, "Configuration saved.")
+
+    def quit(self):
+        gtk.main_quit()
+
+    def on_action_load_activate(self, widget):
+        try:
+            self.load()
+        except Exception, e:
+            primary_message = "Could not load device information."
+            dlg = gtk.MessageDialog(parent=self.window,
+                                    flags=gtk.DIALOG_MODAL,
+                                    type=gtk.MESSAGE_ERROR,
+                                    buttons=gtk.BUTTONS_CLOSE,
+                                    message_format=primary_message)
+            dlg.format_secondary_text(str(e))
+            dlg.run()
+            dlg.hide()
+
+    def on_action_save_activate(self, widget):
+        try:
+            self.save()
+        except Exception, e:
+            primary_message = "Could not save device information."
+            dlg = gtk.MessageDialog(parent=self.window,
+                                    flags=gtk.DIALOG_MODAL,
+                                    type=gtk.MESSAGE_ERROR,
+                                    buttons=gtk.BUTTONS_CLOSE,
+                                    message_format=primary_message)
+            dlg.format_secondary_text(str(e))
+            dlg.run()
+            dlg.hide()
+
+    def on_imagemenuitem_quit_activate(self, widget):
+        self.quit()
+
+    def on_window_destroy(self, widget):
+        self.quit()
+
+    def event_value_toggled(self, widget, path, device_role, capability):
+        treeview_name = "treeview_%s_%s" % (device_role, capability)
+        treeview = self.builder.get_object(treeview_name)
+        model = treeview.get_model()
+        model[path][1] = not model[path][1]
+
+    def device_changed(self, combobox, device_role):
+        device = self.devices[combobox.get_active_text()]
+
+        for capability, event_names in evdaemon.capabilities.NAMES.items():
+            treeview_name = "treeview_%s_%s" % (device_role, capability)
+            treeview = self.builder.get_object(treeview_name)
+            liststore = gtk.ListStore(str, bool, int)
+            treeview.set_model(liststore)
+
+            for bit_i, event_name in enumerate(event_names):
+                try:
+                    value = device["capabilities"][capability]
+                except KeyError:
+                    # The device might not support all capabilities
+                    # supported by evdaemon: that is totally ok,
+                    # we just leave corresponding model empty.
+                    break
+                if event_name != "" and value & 1 << bit_i:
+                    liststore.append([event_name, False, bit_i])
+
+    def on_window_show(self, window):
+        for access, s in zip(evdaemon.config.rwaccess(), ("read", "write")):
+            if not access:
+                m = "You do not have permission to %s configuration files." % s
+                dlg = gtk.MessageDialog(parent=self.window,
+                                        flags=gtk.DIALOG_MODAL,
+                                        type=gtk.MESSAGE_WARNING,
+                                        buttons=gtk.BUTTONS_CLOSE,
+                                        message_format=m)
+                dlg.format_secondary_text(
+                    "Perhaps re-run with root privileges?")
+                dlg.run()
+                dlg.hide()
+
+        self.builder.get_object("action_load").activate()
+
+    def restart_evdaemon(self):
+        p = subprocess.Popen(evdaemon.RESTART_CMD.split(),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        retval = p.wait()
+        out, err = p.communicate()
+        if retval:
+            raise RuntimeError(err)
+        statusbar = self.builder.get_object("statusbar")
+        context_id = statusbar.get_context_id("restart")
+        statusbar.push(context_id, "Evdaemon restarted.")
+
+    def start_evdaemon(self):
+        p = subprocess.Popen(evdaemon.START_CMD.split(),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        retval = p.wait()
+        out, err = p.communicate()
+        if retval:
+            raise RuntimeError(err)
+        statusbar = self.builder.get_object("statusbar")
+        context_id = statusbar.get_context_id("start")
+        statusbar.push(context_id, "Evdaemon started.")
+
+    def stop_evdaemon(self):
+        p = subprocess.Popen(evdaemon.STOP_CMD.split(),
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        retval = p.wait()
+        out, err = p.communicate()
+        if retval:
+            raise RuntimeError(err)
+        statusbar = self.builder.get_object("statusbar")
+        context_id = statusbar.get_context_id("stop")
+        statusbar.push(context_id, "Evdaemon stopped.")
+
+    def on_action_restart_activate(self, widget):
+        try:
+            self.restart_evdaemon()
+        except Exception, e:
+                m = "Failed to restart evdaemon."
+                dlg = gtk.MessageDialog(parent=self.window,
+                                        flags=gtk.DIALOG_MODAL,
+                                        type=gtk.MESSAGE_ERROR,
+                                        buttons=gtk.BUTTONS_CLOSE,
+                                        message_format=m)
+                dlg.format_secondary_text(str(e))
+                dlg.run()
+                dlg.hide()
+
+    def on_action_start_activate(self, widget):
+        try:
+            self.start_evdaemon()
+        except Exception, e:
+                m = "Failed to start evdaemon."
+                dlg = gtk.MessageDialog(parent=self.window,
+                                        flags=gtk.DIALOG_MODAL,
+                                        type=gtk.MESSAGE_ERROR,
+                                        buttons=gtk.BUTTONS_CLOSE,
+                                        message_format=m)
+                dlg.format_secondary_text(str(e))
+                dlg.run()
+                dlg.hide()
+
+    def on_action_stop_activate(self, widget):
+        try:
+            self.stop_evdaemon()
+        except Exception, e:
+                m = "Failed to stop evdaemon."
+                dlg = gtk.MessageDialog(parent=self.window,
+                                        flags=gtk.DIALOG_MODAL,
+                                        type=gtk.MESSAGE_ERROR,
+                                        buttons=gtk.BUTTONS_CLOSE,
+                                        message_format=m)
+                dlg.format_secondary_text(str(e))
+                dlg.run()
+                dlg.hide()
+
+    def __init__(self):
+        self.builder = gtk.Builder()
+        self.builder.add_from_file(_BUILDER_XML_FILEPATH)
+
+        self.window = self.builder.get_object("window")
+        self.window.set_icon_from_file("/usr/share/pixmaps/evdaemon-admin.xpm")
+
+        self.devices = evdaemon.inputbus.devices()
+
+        for device_role in ("filter", "monitor"):
+            for capability, event_names in evdaemon.capabilities.NAMES.items():
+                treeview_name = "treeview_%s_%s" % (device_role, capability)
+                treeview = self.builder.get_object(treeview_name)
+
+                col_event_name_renderer = gtk.CellRendererText()
+                col_event_value_renderer = gtk.CellRendererToggle()
+
+                col_event_value_renderer.set_property("activatable", True)
+                col_event_value_renderer.connect("toggled",
+                                                 self.event_value_toggled,
+                                                 device_role,
+                                                 capability)
+
+                col_event_name = gtk.TreeViewColumn("Event name",
+                                                    col_event_name_renderer,
+                                                    text=0)
+                col_event_value_title = "%s this event?" % device_role.capitalize()
+                col_event_value = gtk.TreeViewColumn(col_event_value_title,
+                                                     col_event_value_renderer,
+                                                     active=1)
+
+                treeview.append_column(col_event_name)
+                treeview.append_column(col_event_value)
+
+        combobox_clone_bustype = self.builder.get_object("combobox_clone_bustype")
+        liststore_clone_bustype = gtk.ListStore(str, int)
+        combobox_clone_bustype.set_model(liststore_clone_bustype)
+        cell = gtk.CellRendererText()
+        combobox_clone_bustype.pack_start(cell, True)
+        combobox_clone_bustype.add_attribute(cell, "text", 0)
+        for i, bustype_name in enumerate(evdaemon.bustype.NAMES):
+            if bustype_name != "":
+                liststore_clone_bustype.append([bustype_name, i])
+        combobox_clone_bustype.set_active(0)
+
+        for device_role in ("filter", "monitor"):
+            combobox_name = "combobox_%s_name" % device_role
+            combobox = self.builder.get_object(combobox_name)
+            liststore = gtk.ListStore(str)
+            combobox.set_model(liststore)
+            cell = gtk.CellRendererText()
+            combobox.pack_start(cell, True)
+            combobox.add_attribute(cell, "text", 0)
+            for name, device in self.devices.items():
+                capabilities = set(device["capabilities"].keys())
+                if set(evdaemon.capabilities.NAMES.keys()) & set(capabilities):
+                    liststore.append([name])
+            combobox.connect("changed", self.device_changed, device_role)
+            combobox.set_active(0)
+
+        self.window.maximize()
+        self.builder.connect_signals(self)
+
+        restart_supported = len(evdaemon.RESTART_CMD) > 0
+        start_supported = len(evdaemon.START_CMD) > 0
+        stop_supported = len(evdaemon.STOP_CMD) > 0
+        action_restart = self.builder.get_object("action_restart")
+        action_start = self.builder.get_object("action_start")
+        action_stop = self.builder.get_object("action_stop")
+        action_restart.set_sensitive(restart_supported)
+        action_start.set_sensitive(start_supported)
+        action_stop.set_sensitive(stop_supported)
+        action_restart.set_visible(restart_supported)
+        action_start.set_visible(start_supported)
+        action_stop.set_visible(stop_supported)
+
+        menuitem_evdaemon = self.builder.get_object("menuitem_evdaemon")
+        menuitem_evdaemon_visible = any((restart_supported,
+                                         start_supported,
+                                         stop_supported))
+        menuitem_evdaemon.set_property("visible", menuitem_evdaemon_visible)
+
+        self.window.show()
+
+def main(argv):
+    evdaemon_admin = EvdaemonAdmin()
+    gtk.main()
+
+if __name__ == "__main__":
+    main(sys.argv)
