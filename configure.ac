@@ -1,9 +1,9 @@
 AC_INIT(
         [evdaemon],
         [0.3.3],
-        [tuos@codegrove.org],
+        [tuomasjjrasanen@tjjr.fi],
         [evdaemon],
-        [http://codegrove.org/evdaemon/])
+        [http://tjjr.fi/software/evdaemon/])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])

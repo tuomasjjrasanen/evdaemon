@@ -1,6 +1,5 @@
 /*
-  evdaemon - Monitor Linux event devices and modify their behavior.
-  Copyright © 2010 Tuomas Räsänen (tuos) <tuos@codegrove.org>
+  Copyright © 2011 Tuomas Jorma Juhani Räsänen
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

@@ -1,104 +1,35 @@
-==================================================================
- evdaemon - Monitor Linux event devices and modify their behavior
-==================================================================
+Evdaemon
+========
 
-.. contents::
+Evdaemon syndaemon on steroids. It is to Linux generic event devices
+what syndaemon is for just keyboards and touchpads. It allows to
+monitor any event device and change other event device's behavior
+accordingly.
 
-Description
-===========
-
-The Code Grove evdaemon program is `syndaemon
-<http://linuxcommand.org/man_pages/syndaemon1.html>`_ on steroids. It
-is to Linux generic event devices what syndaemon is for just keyboards
-and touchpads.  It allows to monitor any event device and change other
-event device's behavior accordingly.
-
-The evdaemon program was originally written to mimic the functionality
+Evdaemon was originally written to mimic the functionality of
 syndaemon in laptops having touchpads not recognized as Synaptics
-touchpads.  In addition, unlike syndaemon, evdaemon does not limit
-it's filtering capabilities to just pointer motion or keyboard
-events. All filtered and monitored events can be defined
-individually. And because event devices are not `X Window System
-<http://www.x.org/wiki/>`_ specific things, why should the controlling
-daemon depend on X?
+touchpads. Evdaemon does not limit it's filtering capabilities to just
+pointer motion or keyboard events. All filtered and monitored events
+can be defined individually.
 
 General information
-===================
+-------------------
 
-- **Author**: Tuomas Räsänen (tuos) <tuos@codegrove.org>
-- **Homepage**: http://codegrove.org/evdaemon/
-- **License**: GPLv3+ (see COPYING for details)
-- **Version**: 0.3.3
-
-Runtime requirements
-====================
-
-- Linux kernel 2.6.x
-- uinput module installed::
-
-    modprobe -i uinput
-
-- Add uinput to the modules automatically loaded on boot if it is not already
-  there::
-
-    grep -q uinput /etc/modules || echo uinput >> /etc/modules
+- Version:    0.3.3
+- License:    GPLv3+ (see COPYING for details)
+- Author:     Tuomas Jorma Juhani Räsänen <tuomasjjrasanen@tjjr.fi>
+- Homepage:   <http://tjjr.fi/software/evdaemon/>
+- Code:       <http://code.launchpad.net/evdaemon/>
+- Bugs:       <http://bugs.launchpad.net/evdaemon/>
 
 Build requirements
-==================
+------------------
 
-- udev library development files: (Ubuntu: ``apt-get install libudev-dev``)
+- libudev-dev
 
-Downloading
-===========
+Runtime requirements
+--------------------
 
-- Ubuntu package: https://launchpad.net/~tuos/+archive/codegrove
-- Tarball is available at: http://codegrove.org/evdaemon/releases/evdaemon-0.3.3.tar.gz
-- Tarballs of every release at: http://codegrove.org/evdaemon/releases/
-- Latest sources from public git-repository: http://github.com/tuos/evdaemon/ ::
-
-    git clone git://github.com/tuos/evdaemon.git
-
-Installing
-==========
-
-Ubuntu
-------
-
-The recommended way to install evdaemon is to
-`add it's PPA to your system <https://launchpad.net/~tuos/+archive/codegrove>`_.
-This allows you to treat evdaemon as any other Ubuntu package.
-
-Other systems
--------------
-
-The install-procedure adheres the "standard"::
-
-  ./configure
-  make && make install
-
-Configuration & Run
-===================
-
-The runtime configuration of the evdaemon can changed by editing files
-in ``$sysconfdir/evdaemon`` directory and it's subdirectories. Refer
-to README file in each directory. There is also `evdaemon-admin
-<http://codegrove.org/evdaemon-admin/>`_ project wich provides tools
-for configuring and controlling evdaemon easily.
-
-Run evdaemon as a daemon process::
-
-  evdaemon --daemon
-
-Output help information::
-
-  evdaemon --help
-
-Output version and copyright information::
-
-  evdaemon --version
-
-Bug reporting
-=============
-
-Report bugs by sending email to tuos@codegrove.org or by opening an issue
-at http://github.com/tuos/evdaemon/issues .
+- libudev0
+- uinput.ko
+- rw-permissions to uinput device node
